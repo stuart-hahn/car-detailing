@@ -12,18 +12,40 @@ export type QcUiStage =
 
 const QC_SLOTS = new Set(["qc", "delivery"]);
 
+/** Steps the tech must complete before QC (excludes unsold/locked upsells). */
+export function getActionableWorkSteps(steps: StepInstance[]): StepInstance[] {
+  return steps.filter(
+    (s) =>
+      s.slot !== "intake" &&
+      !QC_SLOTS.has(s.slot) &&
+      s.status !== "locked" &&
+      s.status !== "cancelled",
+  );
+}
+
+export function getIncompleteActionableSteps(
+  steps: StepInstance[],
+): StepInstance[] {
+  return getActionableWorkSteps(steps).filter((s) => s.status !== "completed");
+}
+
+export function countLockedUpsellSteps(steps: StepInstance[]): number {
+  return steps.filter(
+    (s) =>
+      s.slot !== "intake" &&
+      !QC_SLOTS.has(s.slot) &&
+      s.status === "locked",
+  ).length;
+}
+
 export function hasPendingRework(steps: StepInstance[]): boolean {
   return steps.some((s) => s.status === "needs_rework");
 }
 
 export function isWorkChecklistComplete(steps: StepInstance[]): boolean {
-  const workSteps = steps.filter(
-    (s) => s.slot !== "intake" && !QC_SLOTS.has(s.slot),
-  );
-  return (
-    workSteps.length > 0 &&
-    workSteps.every((s) => s.status === "completed")
-  );
+  const actionable = getActionableWorkSteps(steps);
+  if (actionable.length === 0) return false;
+  return actionable.every((s) => s.status === "completed");
 }
 
 export function isFreshEyesDone(job: JobRecord): boolean {

@@ -56,7 +56,7 @@ describe("QC flow", () => {
     ).toBe(true);
   });
 
-  it("requires all non-qc work steps complete", () => {
+  it("requires all actionable work steps complete", () => {
     expect(
       isWorkChecklistComplete([
         inst("wash", "completed"),
@@ -67,6 +67,16 @@ describe("QC flow", () => {
       isWorkChecklistComplete([
         inst("wash", "completed"),
         inst("dry", "completed"),
+      ]),
+    ).toBe(true);
+  });
+
+  it("ignores locked upsell steps when checking QC readiness", () => {
+    expect(
+      isWorkChecklistComplete([
+        inst("wash", "completed"),
+        inst("interior_wet", "locked", "int_ozone_prep"),
+        inst("interior_wet", "locked", "int_ozone_run"),
       ]),
     ).toBe(true);
   });

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatRemainingMs } from "../lib/checklist/undo";
-import { getQcUiStage, isWorkChecklistComplete } from "../lib/qc/flow";
+import {
+  countLockedUpsellSteps,
+  getIncompleteActionableSteps,
+  getQcUiStage,
+  isWorkChecklistComplete,
+} from "../lib/qc/flow";
 import {
   FRESH_EYES_DELIVERY_MS,
   FRESH_EYES_TOTAL_MS,
@@ -104,11 +109,31 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
   }
 
   if (!workReady && stage !== "blocked_rework") {
+    const incomplete = getIncompleteActionableSteps(job.generated_steps);
+    const lockedCount = countLockedUpsellSteps(job.generated_steps);
     return (
       <section className="space-y-4">
         <p className="text-slate-300">
-          Finish all work steps on the checklist before starting QC.
+          Finish all active work steps on the checklist before starting QC.
+          {lockedCount > 0
+            ? ` Locked upsell steps (${lockedCount}) do not count toward completion.`
+            : ""}
         </p>
+        {incomplete.length > 0 && (
+          <ul className="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-slate-400">
+            {incomplete.slice(0, 6).map((s) => (
+              <li key={s.instance_id} className="capitalize">
+                · {s.slot.replace(/_/g, " ")}
+                {s.status === "needs_rework" ? " (rework)" : ""}
+              </li>
+            ))}
+            {incomplete.length > 6 && (
+              <li className="text-slate-500">
+                · …and {incomplete.length - 6} more
+              </li>
+            )}
+          </ul>
+        )}
         <button
           type="button"
           onClick={onGoChecklist}

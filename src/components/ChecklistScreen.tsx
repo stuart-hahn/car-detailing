@@ -7,7 +7,12 @@ import {
   getUnmetDependencies,
 } from "../lib/checklist/dependencies";
 import { evaluateUndoPolicy } from "../lib/checklist/undo";
-import { hasPendingRework, isWorkChecklistComplete } from "../lib/qc/flow";
+import {
+  countLockedUpsellSteps,
+  getActionableWorkSteps,
+  hasPendingRework,
+  isWorkChecklistComplete,
+} from "../lib/qc/flow";
 import { canUnlockWheels } from "../lib/intake/requirements";
 import {
   hasJobPhoto,
@@ -91,7 +96,9 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const activeJob = job;
   const wheelsUnlocked = canUnlockWheels(activeJob);
   const workStarted = activeJob.status === "active";
-  const completed = steps.filter((s) => s.status === "completed").length;
+  const actionableSteps = getActionableWorkSteps(activeJob.generated_steps);
+  const completed = actionableSteps.filter((s) => s.status === "completed").length;
+  const lockedUpsellCount = countLockedUpsellSteps(activeJob.generated_steps);
   const reworkPending = hasPendingRework(activeJob.generated_steps);
   const qcReady = isWorkChecklistComplete(activeJob.generated_steps);
 
@@ -165,13 +172,22 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
           <div
             className="h-full bg-emerald-500 transition-all"
             style={{
-              width: steps.length ? `${(completed / steps.length) * 100}%` : "0%",
+              width: actionableSteps.length
+                ? `${(completed / actionableSteps.length) * 100}%`
+                : "0%",
             }}
           />
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          {completed} / {steps.length} steps · swipe right to complete
+          {completed} / {actionableSteps.length} steps · swipe right to complete
         </p>
+        {lockedUpsellCount > 0 && (
+          <p className="mt-2 text-xs text-slate-500">
+            {lockedUpsellCount} upsell step
+            {lockedUpsellCount === 1 ? "" : "s"} locked (not sold) — does not
+            block QC
+          </p>
+        )}
         {reworkPending && (
           <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
             Rework required — complete flagged steps, then return to QC.

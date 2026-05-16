@@ -40,6 +40,8 @@ Done means: <verifiable>
 
 ## Commits (recent)
 
-- `9081380` scaffold + PHASE1_SPEC
-- `fb39d4f` intake gates + refer-out
+- `59600ef` fix locked upsell not blocking QC
+- `2190ecf` QC screens (two-pass, rework, fresh-eyes)
 - `4f0831f` swipe-to-complete + undo
+- `fb39d4f` intake gates + refer-out
+- `9081380` scaffold + PHASE1_SPEC

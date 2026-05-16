@@ -120,6 +120,11 @@ export function SwipeStepCard({
               {step.zone ? ` · ${step.zone}` : ""}
               {lockReason ? ` · ${lockReason}` : ""}
             </p>
+            {step.status === "locked" && (
+              <p className="mt-1 text-xs text-slate-500">
+                Not sold on this job — does not block QC
+              </p>
+            )}
           </div>
           {isCompleted && <span className="text-sm text-emerald-400">✓</span>}
         </div>
