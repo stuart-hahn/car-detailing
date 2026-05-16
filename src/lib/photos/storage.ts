@@ -78,6 +78,26 @@ export async function listJobPhotoTags(jobId: string): Promise<string[]> {
   return photos.map((p) => p.tag);
 }
 
+export function stepPhotoTag(instanceId: string): string {
+  return `step_${instanceId}`;
+}
+
+export async function deleteJobPhoto(
+  jobId: string,
+  tag: string,
+): Promise<void> {
+  const photo = await db.photos.where({ job_id: jobId, tag }).first();
+  if (photo) await db.photos.delete(photo.id);
+}
+
+export async function hasJobPhoto(
+  jobId: string,
+  tag: string,
+): Promise<boolean> {
+  const count = await db.photos.where({ job_id: jobId, tag }).count();
+  return count > 0;
+}
+
 export async function getJobPhotoUrl(
   jobId: string,
   tag: string,

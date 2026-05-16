@@ -4,7 +4,17 @@ import master from "../data/master_steps.json";
 import { generateChecklist } from "../lib/generator";
 import { deriveGeneratorFlags, hasHardBlockFlag } from "../lib/intake/flags";
 import { evaluateIntakeGate } from "../lib/intake/gates";
-import { listJobPhotoTags } from "../lib/photos/storage";
+import {
+  areDependenciesMet,
+  getStepTemplate,
+} from "../lib/checklist/dependencies";
+import { evaluateUndoPolicy } from "../lib/checklist/undo";
+import {
+  deleteJobPhoto,
+  hasJobPhoto,
+  listJobPhotoTags,
+  stepPhotoTag,
+} from "../lib/photos/storage";
 import type {
   JobInput,
   JobIntake,
@@ -82,6 +92,11 @@ interface JobStore {
   >;
   saveReferOut: (data: ReferOutRecord) => Promise<void>;
   startWork: () => Promise<void>;
+  completeStep: (instanceId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  undoStep: (
+    instanceId: string,
+    reason?: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 export const useJobStore = create<JobStore>((set, get) => ({
@@ -348,5 +363,110 @@ export const useJobStore = create<JobStore>((set, get) => ({
     };
     await db.jobs.put(updated);
     set({ activeJob: updated });
+  },
+
+  completeStep: async (instanceId) => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+    if (job.status !== "active" && job.status !== "awaiting_approval") {
+      return { ok: false, error: "Start work before completing steps" };
+    }
+
+    const stepIndex = job.generated_steps.findIndex(
+      (s) => s.instance_id === instanceId,
+    );
+    if (stepIndex === -1) return { ok: false, error: "Step not found" };
+
+    const step = job.generated_steps[stepIndex]!;
+    if (step.status === "locked") {
+      return { ok: false, error: "Step is locked" };
+    }
+    if (step.status === "completed") {
+      return { ok: false, error: "Step already completed" };
+    }
+
+    if (!areDependenciesMet(step, job.generated_steps, masterFile)) {
+      return { ok: false, error: "Complete prerequisite steps first" };
+    }
+
+    const template = getStepTemplate(masterFile, step.template_id);
+    if (template?.photo_required) {
+      const hasPhoto = await hasJobPhoto(job.id, stepPhotoTag(instanceId));
+      if (!hasPhoto) {
+        return { ok: false, error: "Photo required before completing this step" };
+      }
+    }
+
+    const updatedSteps = [...job.generated_steps];
+    updatedSteps[stepIndex] = {
+      ...step,
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      photo_taken: template?.photo_required ?? step.photo_taken,
+    };
+
+    const updated: JobRecord = {
+      ...job,
+      generated_steps: updatedSteps,
+      audit_log: [
+        ...job.audit_log,
+        {
+          at: new Date().toISOString(),
+          action: "step_completed",
+          detail: step.template_id,
+        },
+      ],
+    };
+
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  undoStep: async (instanceId, reason) => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+
+    const stepIndex = job.generated_steps.findIndex(
+      (s) => s.instance_id === instanceId,
+    );
+    if (stepIndex === -1) return { ok: false, error: "Step not found" };
+
+    const step = job.generated_steps[stepIndex]!;
+    const policy = evaluateUndoPolicy(job, step);
+    if (!policy.allowed) {
+      return { ok: false, error: policy.blockMessage ?? "Undo not allowed" };
+    }
+    if (policy.needsReason && !reason?.trim()) {
+      return { ok: false, error: "Reason required for undo" };
+    }
+
+    await deleteJobPhoto(job.id, stepPhotoTag(instanceId));
+
+    const updatedSteps = [...job.generated_steps];
+    updatedSteps[stepIndex] = {
+      ...step,
+      status: "pending",
+      completed_at: null,
+      photo_taken: false,
+      tech_note: reason?.trim() ?? step.tech_note,
+    };
+
+    const updated: JobRecord = {
+      ...job,
+      generated_steps: updatedSteps,
+      audit_log: [
+        ...job.audit_log,
+        {
+          at: new Date().toISOString(),
+          action: "step_undone",
+          detail: `${step.template_id}${reason ? `: ${reason}` : ""}`,
+        },
+      ],
+    };
+
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
   },
 }));

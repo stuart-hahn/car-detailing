@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { ChecklistScreen } from "./components/ChecklistScreen";
 import { IntakeScreen } from "./components/IntakeScreen";
 import { ReferOutScreen } from "./components/ReferOutScreen";
 import { getOrCreateSettings } from "./lib/db";
-import { canUnlockWheels } from "./lib/intake/requirements";
 import { useJobStore, type Screen } from "./store/jobStore";
 import type { TierId, UpholsteryType } from "./lib/types";
 
@@ -29,7 +29,6 @@ export default function App() {
     activeJob,
     createJob,
     loadJob,
-    startWork,
   } = useJobStore();
   const [ready, setReady] = useState(false);
 
@@ -85,7 +84,10 @@ export default function App() {
           <ReferOutScreen job={activeJob} />
         )}
         {screen === "checklist" && (
-          <ChecklistScreen job={activeJob} onStartWork={startWork} onGoIntake={() => setScreen("intake")} />
+          <ChecklistScreen
+            job={activeJob}
+            onGoIntake={() => setScreen("intake")}
+          />
         )}
         {screen === "qc" && <PlaceholderScreen title="QC" job={activeJob} />}
         {screen === "delivery" && (
@@ -250,135 +252,6 @@ function NewJobScreen({
   );
 }
 
-function ChecklistScreen({
-  job,
-  onStartWork,
-  onGoIntake,
-}: {
-  job: ReturnType<typeof useJobStore.getState>["activeJob"];
-  onStartWork: () => Promise<void>;
-  onGoIntake: () => void;
-}) {
-  if (!job) {
-    return <p className="text-slate-400">No active job. Create one first.</p>;
-  }
-
-  if (!job.intake?.completed_at) {
-    return (
-      <section className="space-y-4">
-        <p className="text-slate-300">Intake must be completed before work starts.</p>
-        <p className="text-sm text-slate-500">
-          Slot 02 (wheels) and all exterior/interior steps stay locked until intake
-          gates pass.
-        </p>
-        <button
-          type="button"
-          onClick={onGoIntake}
-          className="w-full rounded-xl bg-sky-600 py-3 font-medium text-white"
-        >
-          Go to intake
-        </button>
-      </section>
-    );
-  }
-
-  const wheelsUnlocked = canUnlockWheels(job);
-  const workStarted = job.status === "active";
-
-  const steps = job.generated_steps.filter((s) => s.slot !== "intake");
-  const completed = steps.filter((s) => s.status === "completed").length;
-
-  function isStepLocked(step: (typeof steps)[0]) {
-    if (!wheelsUnlocked) return true;
-    if (!workStarted) return step.slot !== "intake";
-    if (step.status === "locked") return true;
-    return false;
-  }
-
-  return (
-    <section className="space-y-4">
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-        <p className="text-sm text-slate-400">
-          {job.customer_name} · {job.vehicle_ymmt}
-        </p>
-        <p className="mt-1 font-medium capitalize">{job.tier}</p>
-        {!workStarted && (
-          <button
-            type="button"
-            onClick={() => void onStartWork()}
-            className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
-          >
-            Start work — unlock checklist
-          </button>
-        )}
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
-          <div
-            className="h-full bg-emerald-500 transition-all"
-            style={{
-              width: steps.length
-                ? `${(completed / steps.length) * 100}%`
-                : "0%",
-            }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-slate-500">
-          {completed} / {steps.length} steps · SOP {job.sop_version}
-          {!wheelsUnlocked && " · Intake incomplete"}
-        </p>
-      </div>
-
-      {job.warn_banners.length > 0 && (
-        <div className="space-y-2">
-          {(job.warn_banners as { flag: string; message: string }[]).map(
-            (b) => (
-              <p
-                key={b.flag}
-                className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
-              >
-                {b.message}
-              </p>
-            ),
-          )}
-        </div>
-      )}
-
-      <ol className="space-y-2">
-        {steps.map((step, index) => {
-          const locked = isStepLocked(step);
-          return (
-            <li
-              key={step.instance_id}
-              className={`rounded-xl border px-4 py-3 ${
-                step.status === "completed"
-                  ? "border-emerald-500/30 bg-emerald-500/5"
-                  : locked
-                    ? "border-slate-800 bg-slate-900/30 opacity-60"
-                    : "border-slate-700 bg-slate-900/50"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 text-xs text-slate-500">
-                  {index + 1}
-                </span>
-                <div>
-                  <p className="font-medium">{step.template_id}</p>
-                  <p className="text-xs capitalize text-slate-500">
-                    {step.slot}
-                    {locked && step.slot === "wheels" && !wheelsUnlocked
-                      ? " · locked until intake complete"
-                      : locked
-                        ? ` · ${step.status.replace("_", " ")}`
-                        : ""}
-                  </p>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  );
-}
 
 function PlaceholderScreen({
   title,
