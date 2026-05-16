@@ -1,0 +1,16 @@
+{
+  "exterior": [
+    "Synthetic sealant",
+    "Iron remover",
+    "Clay lubricant",
+    "Tar remover"
+  ],
+  "interior": [
+    "Interior cleaner",
+    "Fabric extractor",
+    "Leather conditioner",
+    "Enzyme odor neutralizer"
+  ],
+  "wheels": ["Wheel cleaner", "Wheel sealant", "Tire dressing"],
+  "engine": ["Engine degreaser"]
+}

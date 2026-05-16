@@ -1,0 +1,50 @@
+{
+  "addons": [
+    {
+      "id": "addon_clay",
+      "display_name": "Clay Bar Decontamination",
+      "group": "exterior_decon",
+      "enabled": true,
+      "available_on_tiers": ["maintenance", "refresh", "showroom"],
+      "approval_required": false,
+      "injects_steps": ["decon_iron", "decon_clay"]
+    },
+    {
+      "id": "addon_engine_bay",
+      "display_name": "Engine Bay Detail",
+      "group": "engine",
+      "enabled": true,
+      "available_on_tiers": ["maintenance", "refresh", "showroom"],
+      "approval_required": false,
+      "injects_steps": ["eng_protect", "eng_degrease", "eng_rinse"]
+    },
+    {
+      "id": "addon_ozone_treatment",
+      "display_name": "Ozone Odor Treatment",
+      "group": "interior_odor",
+      "enabled": true,
+      "available_on_tiers": ["maintenance", "refresh", "showroom"],
+      "approval_required": true,
+      "injects_steps": ["int_ozone_prep", "int_ozone_run"]
+    },
+    {
+      "id": "addon_pet_hair_removal",
+      "display_name": "Pet Hair Removal (enhanced)",
+      "group": "interior_detail",
+      "enabled": true,
+      "available_on_tiers": ["maintenance", "refresh", "showroom"],
+      "approval_required": true,
+      "injects_steps": ["int_pet_hair_severe"]
+    },
+    {
+      "id": "addon_ceramic_coating",
+      "display_name": "Ceramic Coating",
+      "group": "exterior_protection",
+      "enabled": false,
+      "available_on_tiers": ["showroom"],
+      "approval_required": true,
+      "injects_steps": ["coat_apply"],
+      "reserved": true
+    }
+  ]
+}

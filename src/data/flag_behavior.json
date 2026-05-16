@@ -1,0 +1,65 @@
+{
+  "flags": {
+    "pet_hair_light": {
+      "maintenance": "upsell",
+      "refresh": "inject",
+      "showroom": "inject",
+      "adds_time_min": 20,
+      "injects_steps": ["int_pet_hair_light"]
+    },
+    "pet_hair_severe": {
+      "maintenance": "upsell",
+      "refresh": "upsell",
+      "showroom": "inject",
+      "adds_time_min": 45,
+      "injects_steps": ["int_pet_hair_severe"]
+    },
+    "odor_1": {
+      "maintenance": "warn",
+      "refresh": "inject",
+      "showroom": "inject",
+      "injects_steps": ["int_odor_light"]
+    },
+    "odor_2": {
+      "maintenance": "upsell",
+      "refresh": "inject",
+      "showroom": "inject",
+      "adds_time_min": 30,
+      "injects_steps": ["int_odor_moderate"]
+    },
+    "odor_3": {
+      "maintenance": "block_until_approval",
+      "refresh": "upsell_ozone",
+      "showroom": "upsell_ozone",
+      "injects_steps": ["int_ozone_prep"]
+    },
+    "mold": {
+      "maintenance": "hard_block",
+      "refresh": "hard_block",
+      "showroom": "hard_block"
+    },
+    "biohazard": {
+      "maintenance": "hard_block",
+      "refresh": "hard_block",
+      "showroom": "hard_block"
+    },
+    "sap": {
+      "maintenance": "upsell",
+      "refresh": "inject",
+      "showroom": "inject",
+      "injects_steps": ["ext_tar_removal"]
+    },
+    "overspray": {
+      "maintenance": "upsell",
+      "refresh": "upsell",
+      "showroom": "inject",
+      "injects_steps": ["ext_tar_removal"]
+    },
+    "excessive_soiling": {
+      "maintenance": "upsell",
+      "refresh": "inject",
+      "showroom": "inject",
+      "injects_steps": ["int_extraction_extended"]
+    }
+  }
+}
