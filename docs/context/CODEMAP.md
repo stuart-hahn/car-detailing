@@ -31,7 +31,7 @@
 
 | Path | Role |
 |------|------|
-| `src/data/master_steps.json` | Step templates (~30; expand to 55–75) |
+| `src/data/master_steps.json` | Step templates (58 phase-1; sop `2026.05.2`) |
 | `src/data/flag_behavior.json` | Per-tier flag behavior |
 | `src/data/addons.json` | Add-on definitions |
 | `src/data/products.defaults.json` | Care sheet product seed |

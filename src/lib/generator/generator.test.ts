@@ -151,6 +151,48 @@ describe("generateChecklist", () => {
       "coat_apply",
     );
   });
+
+  it("library has 55–75 phase-1 executable templates", () => {
+    const executable = masterFile.steps.filter(
+      (s) => s.enabled && s.phase === 1 && !s.reserved,
+    );
+    expect(executable.length).toBeGreaterThanOrEqual(55);
+    expect(executable.length).toBeLessThanOrEqual(75);
+  });
+
+  it("maintenance includes trunk vacuum and jambs-free wash path", () => {
+    const result = generateChecklist(baseInput(), { master: masterFile });
+    const ids = result.generated_steps.map((s) => s.template_id);
+    expect(ids).toContain("int_trunk_vacuum");
+    expect(ids).toContain("wash_final_rinse");
+    expect(ids).not.toContain("wash_jambs");
+    expect(ids).not.toContain("glass_windshield_decon");
+  });
+
+  it("refresh includes jambs, windshield decon, and trim detail", () => {
+    const result = generateChecklist(
+      baseInput({ tier: "refresh", upholstery_type: "cloth" }),
+      { master: masterFile },
+    );
+    const ids = result.generated_steps.map((s) => s.template_id);
+    expect(ids).toContain("wash_jambs");
+    expect(ids).toContain("glass_windshield_decon");
+    expect(ids).toContain("int_trim_detail");
+    expect(ids).toContain("decon_residue_wipe");
+  });
+
+  it("showroom includes engine, trim restore, exhaust, and delivery walkthrough", () => {
+    const result = generateChecklist(
+      baseInput({ tier: "showroom", upholstery_type: "cloth" }),
+      { master: masterFile },
+    );
+    const ids = result.generated_steps.map((s) => s.template_id);
+    expect(ids).toContain("eng_agitate");
+    expect(ids).toContain("ext_trim_restore");
+    expect(ids).toContain("ext_exhaust_tips");
+    expect(ids).toContain("del_customer_walkthrough");
+    expect(ids).toContain("intake_defect_survey");
+  });
 });
 
 describe("appendApprovedSteps", () => {
