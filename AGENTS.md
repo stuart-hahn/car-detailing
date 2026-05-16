@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `a65cc50` feat: UI updates
 - `84b72ff` feat: UI updates
 - `460661e` feat: UI updates
 - `096e7ab` chore: update AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `e0e68ad` chore: update AGENTS.md
 - `6ff3fe0` Expand master_steps.json to 58 phase-1 templates (sop 2026.05.2)
 - `78b819b` chore: sync AGENTS.md commit log after export/import finish
-- `b574257` Add JSON/ZIP export-import and post-delivery backup prompt
