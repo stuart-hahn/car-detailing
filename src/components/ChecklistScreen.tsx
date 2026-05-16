@@ -21,11 +21,7 @@ import {
 import type { JobRecord } from "../lib/db";
 import type { MasterStepsFile, StepInstance } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
-import {
-  getPendingApprovals,
-  hasBlockingPendingApproval,
-  refreshWarnBanners,
-} from "../lib/approvals";
+import { getPendingApprovals, refreshWarnBanners } from "../lib/approvals";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { PhotoCapture } from "./PhotoCapture";
 import { SwipeStepCard } from "./SwipeStepCard";
@@ -62,7 +58,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
       }),
     );
     setStepPhotoMap(map);
-  }, [job]);
+  }, [job?.id, job?.generated_steps]);
 
   useEffect(() => {
     void refreshStepPhotos();
@@ -78,6 +74,37 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const steps = useMemo(
     () => job?.generated_steps.filter((s) => s.slot !== "intake") ?? [],
     [job?.generated_steps],
+  );
+
+  const approvalInputs = useMemo(() => {
+    if (!job?.intake?.completed_at) return "";
+    return [
+      job.flags.join(","),
+      job.approvals.join(","),
+      (job.declined_approvals ?? []).join(","),
+      job.pre_sold_addons.join(","),
+      job.tier,
+      job.generated_steps.map((s) => `${s.template_id}:${s.status}`).join("|"),
+    ].join(";");
+  }, [
+    job,
+    job?.flags,
+    job?.approvals,
+    job?.declined_approvals,
+    job?.pre_sold_addons,
+    job?.tier,
+    job?.generated_steps,
+    job?.intake?.completed_at,
+  ]);
+
+  const pendingApprovals = useMemo(
+    () => (job?.intake?.completed_at ? getPendingApprovals(job) : []),
+    [job, approvalInputs],
+  );
+
+  const activeWarnBanners = useMemo(
+    () => (job?.intake?.completed_at ? refreshWarnBanners(job) : []),
+    [job, approvalInputs],
   );
 
   if (!job) {
@@ -105,9 +132,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const actionableSteps = getActionableWorkSteps(activeJob.generated_steps);
   const completed = actionableSteps.filter((s) => s.status === "completed").length;
   const lockedUpsellCount = countLockedUpsellSteps(activeJob.generated_steps);
-  const pendingApprovals = getPendingApprovals(activeJob);
-  const activeWarnBanners = refreshWarnBanners(activeJob);
-  const blockingApproval = hasBlockingPendingApproval(activeJob);
+  const blockingApproval = pendingApprovals.some((p) => p.blocking);
   const reworkPending = hasPendingRework(activeJob.generated_steps);
   const qcReady = isWorkChecklistComplete(activeJob.generated_steps);
 

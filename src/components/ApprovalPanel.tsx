@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { JobRecord } from "../lib/db";
 import {
   approvalEvidencePhotoTag,
@@ -16,10 +16,38 @@ interface ApprovalPanelProps {
 
 export function ApprovalPanel({ job }: ApprovalPanelProps) {
   const { grantApproval, declineApproval, intakePhotoTags } = useJobStore();
-  const pending = getPendingApprovals(job);
-  const [expandedKey, setExpandedKey] = useState<string | null>(
-    pending[0]?.key ?? null,
+  const approvalInputs = useMemo(
+    () =>
+      [
+        job.flags.join(","),
+        job.approvals.join(","),
+        (job.declined_approvals ?? []).join(","),
+        job.pre_sold_addons.join(","),
+        job.tier,
+        job.generated_steps
+          .map((s) => `${s.template_id}:${s.status}`)
+          .join("|"),
+      ].join(";"),
+    [
+      job.flags,
+      job.approvals,
+      job.declined_approvals,
+      job.pre_sold_addons,
+      job.tier,
+      job.generated_steps,
+    ],
   );
+  const pending = useMemo(
+    () => getPendingApprovals(job),
+    [job, approvalInputs],
+  );
+  const pendingKeys = useMemo(
+    () => pending.map((p) => p.key).join(","),
+    [pending],
+  );
+  const photoTagsKey = intakePhotoTags.join(",");
+
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [scopeNotes, setScopeNotes] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [customerAttest, setCustomerAttest] = useState<Record<string, boolean>>(
@@ -30,28 +58,32 @@ export function ApprovalPanel({ job }: ApprovalPanelProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    setExpandedKey((prev) => {
+      if (!pending.length) return null;
+      if (prev && pending.some((p) => p.key === prev)) return prev;
+      return pending[0]?.key ?? null;
+    });
+  }, [pendingKeys]);
+
   const refreshEvidence = useCallback(async () => {
+    if (!pendingKeys) {
+      setEvidenceMap({});
+      return;
+    }
+    const keys = pendingKeys.split(",");
     const map: Record<string, boolean> = {};
     await Promise.all(
-      pending.map(async (p) => {
-        map[p.key] = await hasJobPhoto(
-          job.id,
-          approvalEvidencePhotoTag(p.key),
-        );
+      keys.map(async (key) => {
+        map[key] = await hasJobPhoto(job.id, approvalEvidencePhotoTag(key));
       }),
     );
     setEvidenceMap(map);
-  }, [job.id, pending]);
+  }, [job.id, pendingKeys]);
 
   useEffect(() => {
     void refreshEvidence();
-  }, [refreshEvidence, intakePhotoTags]);
-
-  useEffect(() => {
-    if (pending.length && !pending.some((p) => p.key === expandedKey)) {
-      setExpandedKey(pending[0]?.key ?? null);
-    }
-  }, [pending, expandedKey]);
+  }, [refreshEvidence, photoTagsKey]);
 
   if (!pending.length) return null;
 
@@ -116,6 +148,7 @@ export function ApprovalPanel({ job }: ApprovalPanelProps) {
             Number.isFinite(priceVal) ? priceVal : 0,
           );
           const defaultScope = `${item.displayName} — est. ${item.laborMinutes} min add-on`;
+          const evidenceTag = approvalEvidencePhotoTag(item.key);
 
           return (
             <li
@@ -191,12 +224,10 @@ export function ApprovalPanel({ job }: ApprovalPanelProps) {
                     <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-2">
                       <PhotoCapture
                         jobId={job.id}
-                        tag={approvalEvidencePhotoTag(item.key)}
+                        tag={evidenceTag}
                         label="Evidence photo (signature / written OK)"
                         required
-                        photoReady={intakePhotoTags.includes(
-                          approvalEvidencePhotoTag(item.key),
-                        )}
+                        photoReady={intakePhotoTags.includes(evidenceTag)}
                         onUploaded={() => void refreshEvidence()}
                       />
                       {!evidenceMap[item.key] && (
