@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `7270dc2` feat: QC screen updates
 - `58b6267` chore: sync AGENTS.md commit log
 - `165d893` feat: UI updates
 - `aa3e4ef` chore: sync AGENTS.md commit log
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `84b72ff` feat: UI updates
 - `460661e` feat: UI updates
 - `096e7ab` chore: update AGENTS.md
-- `0638051` chore: update AGENTS.md
