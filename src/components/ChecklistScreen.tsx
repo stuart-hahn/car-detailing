@@ -22,6 +22,7 @@ import type { JobRecord } from "../lib/db";
 import type { MasterStepsFile, StepInstance } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
 import { getPendingApprovals, refreshWarnBanners } from "../lib/approvals";
+import { useChecklistCompleteMode } from "../hooks/useChecklistCompleteMode";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { PhotoCapture } from "./PhotoCapture";
 import { SwipeStepCard } from "./SwipeStepCard";
@@ -47,6 +48,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [, tick] = useState(0);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completeMode = useChecklistCompleteMode();
 
   const refreshStepPhotos = useCallback(async () => {
     if (!job) return;
@@ -226,7 +228,10 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
           />
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          {completed} / {actionableSteps.length} steps · swipe right to complete
+          {completed} / {actionableSteps.length} steps ·{" "}
+          {completeMode === "swipe"
+            ? "swipe right to complete"
+            : "check each step to complete"}
         </p>
         {pendingApprovals.length > 0 && (
           <p className="mt-2 text-xs text-slate-500">
@@ -329,6 +334,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
               parallelHints={template?.parallel_hints}
               photoRequired={template?.photo_required}
               hasPhoto={stepPhotoMap[step.instance_id]}
+              completeMode={completeMode}
               onComplete={() => void handleComplete(step.instance_id)}
               onUndo={(r) => void handleUndo(step.instance_id, r)}
               onCapturePhoto={() => setPhotoStepId(step.instance_id)}

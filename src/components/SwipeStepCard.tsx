@@ -1,4 +1,5 @@
-import { useRef, useState, type TouchEvent } from "react";
+import { useRef, useState, type ChangeEvent, type TouchEvent } from "react";
+import type { ChecklistCompleteMode } from "../hooks/useChecklistCompleteMode";
 import {
   formatRemainingMs,
   remainingFreeUndoMs,
@@ -19,6 +20,7 @@ interface SwipeStepCardProps {
   parallelHints?: string[];
   photoRequired?: boolean;
   hasPhoto?: boolean;
+  completeMode?: ChecklistCompleteMode;
   onComplete: () => void;
   onUndo: (reason?: string) => void;
   onCapturePhoto?: () => void;
@@ -35,6 +37,7 @@ export function SwipeStepCard({
   parallelHints = [],
   photoRequired,
   hasPhoto,
+  completeMode = "swipe",
   onComplete,
   onUndo,
   onCapturePhoto,
@@ -49,6 +52,8 @@ export function SwipeStepCard({
   const isCompleted = step.status === "completed";
   const isRework = step.status === "needs_rework";
   const freeUndoMs = isCompleted ? remainingFreeUndoMs(step) : null;
+  const useSwipe = completeMode === "swipe";
+  const photoBlocksComplete = Boolean(photoRequired && !hasPhoto);
 
   function onTouchStart(e: TouchEvent) {
     if (locked || isCompleted) return;
@@ -164,7 +169,7 @@ export function SwipeStepCard({
           <p className="mt-2 text-xs text-amber-300">{dependentWarning}</p>
         )}
 
-        {!locked && !isCompleted && (
+        {!locked && !isCompleted && useSwipe && (
           <div
             className="relative mt-3 h-11 overflow-hidden rounded-lg bg-slate-800"
             onTouchStart={onTouchStart}
@@ -185,6 +190,28 @@ export function SwipeStepCard({
               Swipe right to complete
             </p>
           </div>
+        )}
+
+        {!locked && !isCompleted && !useSwipe && (
+          <label
+            className={`mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2.5 ${
+              photoBlocksComplete ? "cursor-not-allowed opacity-60" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              className="size-5 shrink-0 rounded border-slate-600 accent-emerald-500"
+              disabled={photoBlocksComplete}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                if (e.target.checked) onComplete();
+              }}
+            />
+            <span className="text-sm text-slate-300">
+              {photoBlocksComplete
+                ? "Capture photo first"
+                : "Mark step complete"}
+            </span>
+          </label>
         )}
 
         {isCompleted && undoPolicy && (
