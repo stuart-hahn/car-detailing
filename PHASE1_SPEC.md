@@ -422,7 +422,31 @@ System preference + manual override in Settings. High-contrast deferred to v1.1.
 | 37 | Products | Grouped settings picklist |
 | 38 | Job FSM | Strict + phase |
 | 39 | Helper | Optional assistant_tech |
-| 40 | Next step | This spec → scaffold → commit |
+| 16 | Generator pipeline | C — additive merge; `warn` = banner only |
+| 17 | primary_goal | B + D-lite; Maintenance expectation ack for 4 goals |
+| 18 | Phase 1 approvals | D — attest + evidence photo thresholds |
+| 19 | Mid-job unlock | C — append only; locked previews visible |
+| 20 | Fresh-eyes pause | B — 5 min, enable at 2 min, skip + reason |
+| 21 | Tech stack | Vite/React/TS/Zustand/Dexie/PWA |
+| 22 | Backup | B + C — export/import + post-delivery prompt |
+| 23 | Completed jobs | 24h reopen window |
+| 24 | Step undo | D — 5 min free, then reason |
+| 25 | Intake photos | Tier-scaled B; odometer at QC only |
+| 26 | QC rework | Auto-reopen + abbreviated second pass |
+| 27 | Operator profile | Single local profile, text-only |
+| 28 | SOP versioning | Pin `sop_version` on job create |
+| 29 | Repeat jobs | Saved customers + vehicles + repeat |
+| 30 | Slot order | 14 slots; **engine slot 3 (before wash)** |
+| 31 | Parallel hints | Static on active step card |
+| 32 | Care sheets | D + B; product picklist |
+| 33 | Mold/bio refer-out | Fixed template + customer attest |
+| 34 | Photo storage | 1920px / 0.82 / 40MB warn / 80MB cap |
+| 35 | Tests | Vitest + GitHub Actions CI |
+| 36 | UI theme | System + manual toggle |
+| 37 | Product picklist | Grouped settings, seeded defaults |
+| 38 | Job FSM | Strict + phase; rescheduled = declined + reason |
+| 39 | Helper | Optional assistant_tech; max 2 helpers |
+| 40 | Delivery | Spec committed; scaffold in repo |
 
 ---
 
