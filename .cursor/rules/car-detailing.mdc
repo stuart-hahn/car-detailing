@@ -1,0 +1,17 @@
+---
+description: Car detailing SOP PWA — progressive context loading
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# Context discipline
+
+1. Read `AGENTS.md` first (router only).
+2. Read `docs/context/PROJECT_CONTEXT.md` for any task.
+3. Open **one** topic from `docs/INDEX.md` for the subsystem you touch.
+4. Do **not** read `PHASE1_SPEC.md` unless the topic doc says L3 or you hit a spec conflict.
+
+Do not load full interview transcripts or re-run the 40-question design interview.
+
+Verify: `npm test && npm run build`

@@ -2,9 +2,18 @@
 
 Offline-first mobile detailing SOP checklist (Phase 1 PWA).
 
+## For AI agents
+
+**Start here:** [AGENTS.md](./AGENTS.md) → [docs/INDEX.md](./docs/INDEX.md) (progressive discovery; avoids loading full spec).
+
 ## Documentation
 
-- **[PHASE1_SPEC.md](./PHASE1_SPEC.md)** — Locked product and architecture decisions from design interview.
+| Doc | Purpose |
+|-----|---------|
+| [AGENTS.md](./AGENTS.md) | Router — read first |
+| [docs/context/PROJECT_CONTEXT.md](./docs/context/PROJECT_CONTEXT.md) | Compressed L1 context |
+| [docs/INDEX.md](./docs/INDEX.md) | Task → topic file map |
+| [PHASE1_SPEC.md](./PHASE1_SPEC.md) | Full spec (L3 — use sparingly) |
 
 ## Stack
 
@@ -19,19 +28,13 @@ Offline-first mobile detailing SOP checklist (Phase 1 PWA).
 ```bash
 npm install
 npm run dev      # local dev server
-npm test         # generator + QC tests
+npm test         # generator + intake + undo + QC rework tests
 npm run build    # production build
 ```
 
 ## Phase 1 status
 
-- [x] Spec document
-- [x] Checklist generator (pipeline C)
-- [x] Master steps skeleton (~30 templates; expand toward 55–75)
-- [x] Dexie schema + job store scaffold
-- [x] Six-screen UI shell
-- [ ] Full intake gates, QC, photos, export/import
-- [ ] Complete step library content
+See [docs/context/BACKLOG.md](./docs/context/BACKLOG.md).
 
 ## Success metric
 

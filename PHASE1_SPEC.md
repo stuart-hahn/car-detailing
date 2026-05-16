@@ -1,5 +1,7 @@
 # Phase 1 Specification — Mobile Detailing SOP PWA
 
+> **Agents:** Do not load this file by default. Use [AGENTS.md](./AGENTS.md) → [docs/context/PROJECT_CONTEXT.md](./docs/context/PROJECT_CONTEXT.md) → [docs/INDEX.md](./docs/INDEX.md). Open this doc only for deep spec / disputes (L3).
+
 **Status:** Locked for implementation  
 **Success metric:** One solo mobile operator completes **50 real jobs** without SOP breakdown, data loss, or checklist friction.  
 **Version:** 2026.05.1 (document); app pins `sop_version` per job.
