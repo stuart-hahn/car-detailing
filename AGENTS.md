@@ -22,7 +22,7 @@
 
 | Done | Next |
 |------|------|
-| Generator pipeline C, intake gates, swipe+undo | QC screens, export/import, step library expansion |
+| Generator pipeline C, intake gates, swipe+undo, QC screens | export/import, step library expansion |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 

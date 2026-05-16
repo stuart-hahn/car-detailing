@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ChecklistScreen } from "./components/ChecklistScreen";
 import { IntakeScreen } from "./components/IntakeScreen";
+import { QcScreen } from "./components/QcScreen";
 import { ReferOutScreen } from "./components/ReferOutScreen";
 import { getOrCreateSettings } from "./lib/db";
 import { useJobStore, type Screen } from "./store/jobStore";
@@ -89,7 +90,12 @@ export default function App() {
             onGoIntake={() => setScreen("intake")}
           />
         )}
-        {screen === "qc" && <PlaceholderScreen title="QC" job={activeJob} />}
+        {screen === "qc" && (
+          <QcScreen
+            job={activeJob}
+            onGoChecklist={() => setScreen("checklist")}
+          />
+        )}
         {screen === "delivery" && (
           <PlaceholderScreen title="Delivery" job={activeJob} />
         )}

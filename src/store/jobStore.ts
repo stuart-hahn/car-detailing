@@ -9,6 +9,10 @@ import {
   getStepTemplate,
 } from "../lib/checklist/dependencies";
 import { evaluateUndoPolicy } from "../lib/checklist/undo";
+import { isWorkChecklistComplete } from "../lib/qc/flow";
+import { getFreshEyesProgress } from "../lib/qc/freshEyes";
+import { evaluateFinalPhotoGate } from "../lib/qc/requirements";
+import { applyQcRework } from "../lib/qc/rework";
 import {
   deleteJobPhoto,
   hasJobPhoto,
@@ -22,7 +26,13 @@ import type {
   TierId,
   UpholsteryType,
 } from "../lib/types";
-import { db, type JobRecord, type ReferOutRecord } from "../lib/db";
+import {
+  db,
+  type JobRecord,
+  type QcAttempt,
+  type QcState,
+  type ReferOutRecord,
+} from "../lib/db";
 
 const masterFile = master as MasterStepsFile;
 
@@ -97,6 +107,38 @@ interface JobStore {
     instanceId: string,
     reason?: string,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  enterQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  submitWorkQc: (
+    passed: boolean,
+    failCodes?: string[],
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  confirmFinalPhotos: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  startFreshEyes: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  skipFreshEyes: (
+    reason: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  completeFreshEyes: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  startDeliveryQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  completeDeliveryQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
+}
+
+function emptyQcState(): QcState {
+  return { attempts: [] };
+}
+
+function markQcStep(
+  steps: JobRecord["generated_steps"],
+  templateId: "qc_work" | "qc_delivery",
+  completed: boolean,
+): JobRecord["generated_steps"] {
+  return steps.map((s) => {
+    if (s.template_id !== templateId) return s;
+    return {
+      ...s,
+      status: completed ? "completed" : "pending",
+      completed_at: completed ? new Date().toISOString() : null,
+    };
+  });
 }
 
 export const useJobStore = create<JobStore>((set, get) => ({
@@ -128,6 +170,8 @@ export const useJobStore = create<JobStore>((set, get) => ({
         (job.phase === "intake" && !job.intake?.completed_at)
       ) {
         screen = "intake";
+      } else if (job.phase === "qc_work" || job.phase === "qc_delivery") {
+        screen = "qc";
       }
     }
     set({
@@ -467,6 +511,279 @@ export const useJobStore = create<JobStore>((set, get) => ({
 
     await db.jobs.put(updated);
     set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  enterQc: async () => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+    if (!isWorkChecklistComplete(job.generated_steps)) {
+      return { ok: false, error: "Complete all work steps before QC" };
+    }
+
+    const updated: JobRecord = {
+      ...job,
+      phase: "qc_work",
+      qc: job.qc ?? emptyQcState(),
+      audit_log: [
+        ...job.audit_log,
+        { at: new Date().toISOString(), action: "qc_entered" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated, screen: "qc" });
+    return { ok: true };
+  },
+
+  submitWorkQc: async (passed, failCodes = []) => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+
+    const abbreviated = Boolean(job.qc?.abbreviated_work_qc);
+    const attempt: QcAttempt = {
+      at: new Date().toISOString(),
+      kind: "work_complete",
+      passed,
+      fail_codes: passed ? undefined : failCodes,
+      abbreviated,
+    };
+
+    if (!passed) {
+      if (!failCodes.length) {
+        return { ok: false, error: "Select at least one issue" };
+      }
+      let steps = applyQcRework(job.generated_steps, failCodes);
+      steps = markQcStep(steps, "qc_work", false);
+      const qc: QcState = {
+        ...(job.qc ?? emptyQcState()),
+        attempts: [...(job.qc?.attempts ?? []), attempt],
+        fail_codes: failCodes,
+        abbreviated_work_qc: true,
+        work_complete_passed_at: undefined,
+        final_photos_complete_at: undefined,
+        fresh_eyes_started_at: undefined,
+        fresh_eyes_complete_at: undefined,
+        fresh_eyes_skipped_at: undefined,
+        fresh_eyes_skip_reason: undefined,
+      };
+      const updated: JobRecord = {
+        ...job,
+        generated_steps: steps,
+        qc,
+        phase: "checklist",
+        status: "active",
+        audit_log: [
+          ...job.audit_log,
+          {
+            at: new Date().toISOString(),
+            action: "qc_work_failed",
+            detail: failCodes.join(","),
+          },
+        ],
+      };
+      await db.jobs.put(updated);
+      set({ activeJob: updated, screen: "checklist" });
+      return { ok: true };
+    }
+
+    const steps = markQcStep(job.generated_steps, "qc_work", true);
+    const qc: QcState = {
+      ...(job.qc ?? emptyQcState()),
+      attempts: [...(job.qc?.attempts ?? []), attempt],
+      work_complete_passed_at: new Date().toISOString(),
+      abbreviated_work_qc: false,
+      fail_codes: undefined,
+    };
+    const updated: JobRecord = {
+      ...job,
+      generated_steps: steps,
+      qc,
+      phase: "qc_work",
+      audit_log: [
+        ...job.audit_log,
+        { at: new Date().toISOString(), action: "qc_work_passed" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  confirmFinalPhotos: async () => {
+    const job = get().activeJob;
+    if (!job?.qc?.work_complete_passed_at) {
+      return { ok: false, error: "Pass work-complete QC first" };
+    }
+
+    const tags = await listJobPhotoTags(job.id);
+    const gate = evaluateFinalPhotoGate(tags, job.tier);
+    if (!gate.met) {
+      const parts = [
+        `Need ${gate.required} final photos (have ${gate.have})`,
+        gate.missingOdometer ? "odometer photo required" : null,
+      ].filter(Boolean);
+      return { ok: false, error: parts.join("; ") };
+    }
+
+    const qc: QcState = {
+      ...(job.qc ?? emptyQcState()),
+      final_photos_complete_at: new Date().toISOString(),
+    };
+    const updated: JobRecord = {
+      ...job,
+      qc,
+      audit_log: [
+        ...job.audit_log,
+        { at: new Date().toISOString(), action: "qc_final_photos_confirmed" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  startFreshEyes: async () => {
+    const job = get().activeJob;
+    if (!job?.qc?.final_photos_complete_at) {
+      return { ok: false, error: "Confirm final photos first" };
+    }
+    if (job.qc.fresh_eyes_started_at) return { ok: true };
+
+    const qc: QcState = {
+      ...job.qc,
+      fresh_eyes_started_at: new Date().toISOString(),
+    };
+    const updated: JobRecord = {
+      ...job,
+      qc,
+      audit_log: [
+        ...job.audit_log,
+        { at: new Date().toISOString(), action: "fresh_eyes_started" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  skipFreshEyes: async (reason) => {
+    const job = get().activeJob;
+    if (!job?.qc?.final_photos_complete_at) {
+      return { ok: false, error: "Confirm final photos first" };
+    }
+    if (!reason.trim()) {
+      return { ok: false, error: "Reason required to skip fresh-eyes pause" };
+    }
+
+    const qc: QcState = {
+      ...job.qc!,
+      fresh_eyes_skipped_at: new Date().toISOString(),
+      fresh_eyes_skip_reason: reason.trim(),
+    };
+    const updated: JobRecord = {
+      ...job,
+      qc,
+      audit_log: [
+        ...job.audit_log,
+        {
+          at: new Date().toISOString(),
+          action: "fresh_eyes_skipped",
+          detail: reason.trim(),
+        },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  completeFreshEyes: async () => {
+    const job = get().activeJob;
+    if (!job?.qc?.fresh_eyes_started_at) {
+      return { ok: false, error: "Start the fresh-eyes pause first" };
+    }
+
+    const progress = getFreshEyesProgress(job.qc.fresh_eyes_started_at);
+    if (!progress.canStartDelivery) {
+      return {
+        ok: false,
+        error: "Delivery QC unlocks after 2 minutes",
+      };
+    }
+
+    const qc: QcState = {
+      ...job.qc,
+      fresh_eyes_complete_at: new Date().toISOString(),
+    };
+    const updated: JobRecord = {
+      ...job,
+      qc,
+      audit_log: [
+        ...job.audit_log,
+        { at: new Date().toISOString(), action: "fresh_eyes_complete" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  startDeliveryQc: async () => {
+    const job = get().activeJob;
+    if (!job?.qc) return { ok: false, error: "QC not started" };
+
+    const freshDone =
+      job.qc.fresh_eyes_complete_at || job.qc.fresh_eyes_skipped_at;
+    if (!freshDone) {
+      return { ok: false, error: "Complete or skip fresh-eyes pause first" };
+    }
+
+    const updated: JobRecord = {
+      ...job,
+      phase: "qc_delivery",
+      audit_log: [
+        ...job.audit_log,
+        { at: new Date().toISOString(), action: "qc_delivery_started" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  completeDeliveryQc: async () => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+    if (job.phase !== "qc_delivery") {
+      return { ok: false, error: "Start delivery QC first" };
+    }
+
+    const attempt: QcAttempt = {
+      at: new Date().toISOString(),
+      kind: "delivery",
+      passed: true,
+    };
+    const steps = markQcStep(job.generated_steps, "qc_delivery", true);
+    const qc: QcState = {
+      ...(job.qc ?? emptyQcState()),
+      attempts: [...(job.qc?.attempts ?? []), attempt],
+      delivery_passed_at: new Date().toISOString(),
+    };
+    const now = new Date().toISOString();
+    const updated: JobRecord = {
+      ...job,
+      generated_steps: steps,
+      qc,
+      status: "completed",
+      phase: "closed",
+      completed_at: now,
+      audit_log: [
+        ...job.audit_log,
+        { at: now, action: "job_completed" },
+      ],
+    };
+    await db.jobs.put(updated);
+    set({ activeJob: updated, screen: "history" });
     return { ok: true };
   },
 }));

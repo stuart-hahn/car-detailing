@@ -7,6 +7,7 @@ import {
   getUnmetDependencies,
 } from "../lib/checklist/dependencies";
 import { evaluateUndoPolicy } from "../lib/checklist/undo";
+import { hasPendingRework, isWorkChecklistComplete } from "../lib/qc/flow";
 import { canUnlockWheels } from "../lib/intake/requirements";
 import {
   hasJobPhoto,
@@ -26,7 +27,14 @@ interface ChecklistScreenProps {
 }
 
 export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
-  const { startWork, completeStep, undoStep, refreshPhotoTags } = useJobStore();
+  const {
+    startWork,
+    completeStep,
+    undoStep,
+    refreshPhotoTags,
+    enterQc,
+    setScreen,
+  } = useJobStore();
   const [photoStepId, setPhotoStepId] = useState<string | null>(null);
   const [stepPhotoMap, setStepPhotoMap] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<string | null>(null);
@@ -84,6 +92,8 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const wheelsUnlocked = canUnlockWheels(activeJob);
   const workStarted = activeJob.status === "active";
   const completed = steps.filter((s) => s.status === "completed").length;
+  const reworkPending = hasPendingRework(activeJob.generated_steps);
+  const qcReady = isWorkChecklistComplete(activeJob.generated_steps);
 
   function lockState(step: StepInstance): { locked: boolean; reason?: string } {
     if (!wheelsUnlocked) {
@@ -162,6 +172,23 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
         <p className="mt-2 text-xs text-slate-500">
           {completed} / {steps.length} steps · swipe right to complete
         </p>
+        {reworkPending && (
+          <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+            Rework required — complete flagged steps, then return to QC.
+          </p>
+        )}
+        {qcReady && workStarted && (
+          <button
+            type="button"
+            onClick={() => {
+              if (!activeJob.qc) void enterQc();
+              else setScreen("qc");
+            }}
+            className="mt-3 w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white"
+          >
+            {reworkPending ? "QC (after rework)" : "Continue to QC"}
+          </button>
+        )}
       </div>
 
       {actionError && (

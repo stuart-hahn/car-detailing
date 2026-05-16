@@ -1,4 +1,4 @@
-# Topic: QC + delivery (not yet built)
+# Topic: QC + delivery
 
 **L1:** [PROJECT_CONTEXT.md](../context/PROJECT_CONTEXT.md) · **Logic stub:** `lib/qc/rework.ts`
 

@@ -56,6 +56,27 @@ export interface ReferOutRecord {
   acknowledged_at?: string;
 }
 
+export interface QcAttempt {
+  at: string;
+  kind: "work_complete" | "delivery";
+  passed: boolean;
+  fail_codes?: string[];
+  abbreviated?: boolean;
+}
+
+export interface QcState {
+  work_complete_passed_at?: string;
+  abbreviated_work_qc?: boolean;
+  fail_codes?: string[];
+  final_photos_complete_at?: string;
+  fresh_eyes_started_at?: string;
+  fresh_eyes_complete_at?: string;
+  fresh_eyes_skipped_at?: string;
+  fresh_eyes_skip_reason?: string;
+  delivery_passed_at?: string;
+  attempts: QcAttempt[];
+}
+
 export interface JobRecord {
   id: string;
   sop_version: string;
@@ -82,6 +103,7 @@ export interface JobRecord {
   primary_goal?: PrimaryGoalId;
   intake?: JobIntake;
   refer_out?: ReferOutRecord;
+  qc?: QcState;
   created_at: string;
   completed_at?: string;
   reopened_at?: string;
