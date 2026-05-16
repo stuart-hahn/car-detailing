@@ -22,9 +22,17 @@
 
 | Done | Next |
 |------|------|
-| Generator pipeline C, intake gates, swipe+undo, QC screens | export/import, step library expansion |
+| Swipe-to-complete, dependency locks, undo, Dexie jobs/photos/settings, New Job, Intake, Checklist screens, QC screens — work_complete → photos → fresh-eyes → delivery QC; rework loop | Export/import, master_steps.json |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
+
+## Session end (required)
+
+1. Update [BACKLOG.md](docs/context/BACKLOG.md) (+ topic/CODEMAP if you changed architecture).
+2. Run `npm run agent:finish -- -m "your message"` (test + build + sync AGENTS + commit).
+3. Read [docs/context/DISCOVERY_MAINTENANCE.md](docs/context/DISCOVERY_MAINTENANCE.md) when unsure what to edit.
+
+**Auto:** pre-commit refreshes this file from BACKLOG + git log; Cursor `stop` hook commits dirty work unless `.cursor/no-auto-commit` exists.
 
 ## Handoff block (paste for subagents)
 
@@ -36,12 +44,15 @@ Scope in: <paths>
 Scope out: PHASE1_SPEC unless spec conflict
 Verify: npm test && npm run build
 Done means: <verifiable>
+Finish: npm run agent:finish -- -m "<message>"
 ```
 
 ## Commits (recent)
 
-- `9e537c6` fix locked upsell not blocking QC
-- `2190ecf` QC screens (two-pass, rework, fresh-eyes)
-- `4f0831f` swipe-to-complete + undo
-- `fb39d4f` intake gates + refer-out
-- `9081380` scaffold + PHASE1_SPEC
+- `9e537c6` Fix QC gate ignoring locked unsold upsell steps.
+- `2190ecf` Add two-pass QC screens with rework and fresh-eyes flow.
+- `52136ab` docs: progressive discovery for agents
+- `4f0831f` Add swipe-to-complete checklist and step undo policy.
+- `fb39d4f` Add full intake gates, photos, and refer-out flow.
+- `90476a5` Document interview decisions 16–39 in Phase 1 spec.
+- `9081380` Add Phase 1 spec and offline-first PWA scaffold.

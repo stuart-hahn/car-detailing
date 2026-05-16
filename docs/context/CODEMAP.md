@@ -4,7 +4,7 @@
 
 | Path | Role |
 |------|------|
-| `src/App.tsx` | Screen router (6 screens) |
+| `src/App.tsx` | Screen router |
 | `src/store/jobStore.ts` | Job lifecycle, intake, complete/undo step |
 | `src/main.tsx` | React mount |
 
@@ -19,6 +19,9 @@
 | `src/lib/checklist/undo.ts` | Undo policy |
 | `src/lib/checklist/dependencies.ts` | Dep lock, dependents warn |
 | `src/lib/qc/rework.ts` | QC fail → reopen slots |
+| `src/lib/qc/flow.ts` | QC readiness, actionable steps |
+| `src/lib/qc/requirements.ts` | Final photo tier gates |
+| `src/lib/qc/freshEyes.ts` | Fresh-eyes pause timing |
 | `src/lib/slots.ts` | `SLOT_ORDER` canonical |
 | `src/lib/photos/storage.ts` | Compress, save, step photos |
 | `src/lib/types.ts` | Shared TS types |
@@ -39,6 +42,7 @@
 |------|------|
 | `src/components/IntakeScreen.tsx` | Full intake |
 | `src/components/ChecklistScreen.tsx` | Swipe checklist |
+| `src/components/QcScreen.tsx` | Two-pass QC flow |
 | `src/components/SwipeStepCard.tsx` | Swipe + undo UI |
 | `src/components/PhotoCapture.tsx` | Camera/file capture |
 | `src/components/ReferOutScreen.tsx` | Mold/bio close |
@@ -49,6 +53,15 @@
 |------|------|
 | `src/lib/db.ts` | Dexie schema v2 |
 
+## Agent tooling
+
+| Path | Role |
+|------|------|
+| `scripts/agent-sync.mjs` | Sync AGENTS.md from BACKLOG + git; commit/finish helpers |
+| `.githooks/pre-commit` | Runs `agent:sync` before each commit |
+| `.cursor/hooks/agent-stop.sh` | Auto-commit on Cursor agent stop (opt-out file available) |
+| `docs/context/DISCOVERY_MAINTENANCE.md` | When/how to update discovery docs |
+
 ## Tests
 
 | Path | Covers |
@@ -57,3 +70,4 @@
 | `src/lib/intake/gates.test.ts` | Intake gate |
 | `src/lib/checklist/undo.test.ts` | Undo policy |
 | `src/lib/qc/rework.test.ts` | QC rework map |
+| `scripts/agent-sync.test.mjs` | Discovery sync helpers |

@@ -14,6 +14,7 @@ Pick **one** L2 doc for your task. Open L3 (`PHASE1_SPEC.md`) only if L2 points 
 | Product/tier/pricing decisions | [context/DECISIONS.md](context/DECISIONS.md) |
 | File locations | [context/CODEMAP.md](context/CODEMAP.md) |
 | What's shipped / TODO | [context/BACKLOG.md](context/BACKLOG.md) |
+| Maintaining discovery / auto-sync | [context/DISCOVERY_MAINTENANCE.md](context/DISCOVERY_MAINTENANCE.md) |
 
 ## Layer sizes (approx)
 

@@ -15,3 +15,16 @@ alwaysApply: true
 Do not load full interview transcripts or re-run the 40-question design interview.
 
 Verify: `npm test && npm run build`
+
+# Session end
+
+- Update `docs/context/BACKLOG.md` when shipping work.
+- Run `npm run agent:finish -- -m "…"` before handing off (syncs AGENTS.md, commits).
+- If you add screens, lib modules, or flows: update `PROJECT_CONTEXT.md`, `CODEMAP.md`, and the relevant `docs/topics/*.md` — see `docs/context/DISCOVERY_MAINTENANCE.md`.
+
+# Progressive discovery
+
+- **L0** AGENTS.md — router; Done/Next and commits are synced from BACKLOG + git (do not hand-edit commits).
+- **L1** PROJECT_CONTEXT.md — default product/architecture snapshot.
+- **L2** one topic from INDEX.md — subsystem you are touching.
+- **L3** PHASE1_SPEC.md — last resort only.
