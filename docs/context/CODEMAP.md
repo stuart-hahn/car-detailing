@@ -44,6 +44,8 @@
 | `src/components/IntakeScreen.tsx` | Full intake |
 | `src/components/ChecklistScreen.tsx` | Swipe checklist |
 | `src/components/QcScreen.tsx` | Two-pass QC flow |
+| `src/components/DeliveryScreen.tsx` | Customer handoff + delivery QC |
+| `src/lib/delivery/handoff.ts` | Delivery walkthrough step helpers |
 | `src/components/SwipeStepCard.tsx` | Swipe + undo UI |
 | `src/components/PhotoCapture.tsx` | Camera/file capture |
 | `src/components/ReferOutScreen.tsx` | Mold/bio close |

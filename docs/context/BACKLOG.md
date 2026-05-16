@@ -13,10 +13,11 @@
 - [x] master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2`
 - [x] Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC
 - [x] Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`
+- [x] Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes
 
 ## Next (priority)
 
-1. _(pick from deferred or polish)_
+1. _(pick from deferred or polish — e.g. 24h job reopen, history filters)_
 
 ## Deferred (Phase 2+)
 

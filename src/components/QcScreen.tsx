@@ -16,11 +16,8 @@ import {
   getFinalPhotoRequirements,
 } from "../lib/qc/requirements";
 import { QC_REWORK_MAPPINGS } from "../lib/qc/rework";
-import { getOrCreateSettings, type AppSettings, type JobRecord } from "../lib/db";
+import type { JobRecord } from "../lib/db";
 import { useJobStore } from "../store/jobStore";
-import { shouldShowBackupPrompt } from "../lib/backup/prompt";
-import { BackupPrompt } from "./BackupPrompt";
-import { CareSheetPanel } from "./CareSheetPanel";
 import { PhotoCapture } from "./PhotoCapture";
 
 interface QcScreenProps {
@@ -38,23 +35,14 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
     startFreshEyes,
     skipFreshEyes,
     completeFreshEyes,
-    startDeliveryQc,
-    completeDeliveryQc,
     setScreen,
-    backupPromptJobId,
-    clearBackupPrompt,
   } = useJobStore();
 
   const [selectedFails, setSelectedFails] = useState<string[]>([]);
   const [skipReason, setSkipReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [, tick] = useState(0);
-
-  useEffect(() => {
-    void getOrCreateSettings().then(setSettings);
-  }, []);
 
   useEffect(() => {
     void refreshPhotoTags();
@@ -342,10 +330,16 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
                 <button
                   type="button"
                   disabled={submitting}
-                  onClick={() => void run(completeFreshEyes)}
+                  onClick={() =>
+                    void run(async () => {
+                      const result = await completeFreshEyes();
+                      if (result.ok) setScreen("delivery");
+                      return result;
+                    })
+                  }
                   className="mt-4 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white disabled:opacity-50"
                 >
-                  Continue to delivery QC
+                  Continue to delivery
                 </button>
               ) : (
                 <p className="mt-4 text-xs text-slate-500">
@@ -376,7 +370,13 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
             <button
               type="button"
               disabled={submitting || !skipReason.trim()}
-              onClick={() => void run(() => skipFreshEyes(skipReason))}
+              onClick={() =>
+                void run(async () => {
+                  const result = await skipFreshEyes(skipReason);
+                  if (result.ok) setScreen("delivery");
+                  return result;
+                })
+              }
               className="mt-2 w-full rounded-lg border border-slate-600 py-2 text-sm text-slate-300 disabled:opacity-40"
             >
               Skip with reason
@@ -385,65 +385,33 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
         </div>
       )}
 
-      {stage === "delivery_qc" && settings && (
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-medium">Delivery QC</h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Customer-facing check: mats, settings, scent, belongings returned.
-            </p>
-          </div>
-          <CareSheetPanel job={job} settings={settings} />
-          {job.phase !== "qc_delivery" ? (
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => void run(startDeliveryQc)}
-              className="w-full rounded-xl bg-sky-600 py-3 font-medium text-white disabled:opacity-50"
-            >
-              Start delivery QC
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => void run(completeDeliveryQc)}
-              className="w-full rounded-xl bg-emerald-600 py-3 font-medium text-white disabled:opacity-50"
-            >
-              Pass delivery QC — complete job
-            </button>
-          )}
+      {stage === "delivery_qc" && (
+        <div className="space-y-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-4">
+          <p className="font-medium text-sky-100">Ready for customer delivery</p>
+          <p className="text-sm text-sky-200/90">
+            Fresh-eyes pause is done. Continue on the Delivery screen for
+            walkthrough, care sheet, and delivery QC.
+          </p>
+          <button
+            type="button"
+            onClick={() => setScreen("delivery")}
+            className="w-full rounded-lg bg-sky-600 py-2 text-sm font-medium text-white"
+          >
+            Go to delivery
+          </button>
         </div>
       )}
 
       {stage === "complete" && (
-        <div className="space-y-3">
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-            <p className="font-medium text-emerald-200">QC complete</p>
-            <button
-              type="button"
-              onClick={() => setScreen("history")}
-              className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
-            >
-              View history
-            </button>
-          </div>
-          {settings && (
-            <CareSheetPanel
-              job={job}
-              settings={settings}
-              savedContent={job.care_sheet_content}
-              savedAt={job.care_sheet_generated_at}
-            />
-          )}
-          {backupPromptJobId === job.id &&
-            shouldShowBackupPrompt(job.id) && (
-              <BackupPrompt
-                jobId={job.id}
-                customerName={job.customer_name}
-                onDismiss={clearBackupPrompt}
-              />
-            )}
+        <div className="space-y-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+          <p className="font-medium text-emerald-200">Job complete</p>
+          <button
+            type="button"
+            onClick={() => setScreen("delivery")}
+            className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
+          >
+            View delivery summary
+          </button>
         </div>
       )}
 

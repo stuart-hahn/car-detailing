@@ -241,7 +241,16 @@ export const useJobStore = create<JobStore>((set, get) => ({
         (job.phase === "intake" && !job.intake?.completed_at)
       ) {
         screen = "intake";
-      } else if (job.phase === "qc_work" || job.phase === "qc_delivery") {
+      } else if (
+        job.status === "completed" ||
+        job.phase === "closed" ||
+        job.phase === "qc_delivery" ||
+        (job.qc &&
+          (job.qc.fresh_eyes_complete_at || job.qc.fresh_eyes_skipped_at) &&
+          !job.qc.delivery_passed_at)
+      ) {
+        screen = "delivery";
+      } else if (job.phase === "qc_work") {
         screen = "qc";
       }
     }
@@ -878,7 +887,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated });
+    set({ activeJob: updated, screen: "delivery" });
     return { ok: true };
   },
 
@@ -909,7 +918,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated });
+    set({ activeJob: updated, screen: "delivery" });
     return { ok: true };
   },
 
@@ -975,6 +984,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
     await db.jobs.put(updated);
     set({
       activeJob: updated,
+      screen: "delivery",
       backupPromptJobId: shouldShowBackupPrompt(job.id) ? job.id : null,
     });
     return { ok: true };

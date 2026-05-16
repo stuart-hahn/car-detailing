@@ -22,7 +22,7 @@
 
 | Done | Next |
 |------|------|
-| Export/import — JSON/ZIP + post-delivery backup prompt, master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2`, Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC, Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps` | — |
+| master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2`, Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC, Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`, Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes | — |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 
@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `64093e7` chore: sync AGENTS.md commit log
 - `6ce691d` chore: update AGENTS.md
 - `90a0045` feat: UI updates
 - `b03ebe1` chore: sync AGENTS.md commit log
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `456c453` feat: UI updates
 - `3e23ea6` chore: sync AGENTS.md commit log
 - `7f9fc42` chore: update AGENTS.md
-- `0452862` feat: UI updates

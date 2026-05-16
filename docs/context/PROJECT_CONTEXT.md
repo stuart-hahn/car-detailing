@@ -35,7 +35,7 @@ master_steps.json + tier + upholstery + flags + pre_sold_addons + approvals
 | Intake | ✓ gates + photos + refer-out |
 | Checklist | ✓ swipe complete + undo + deps |
 | QC | ✓ |
-| Delivery | partial (QC handoff; care sheet backlog) |
+| Delivery | ✓ handoff steps, care sheet, delivery QC |
 | History | partial |
 
 ## Key policies (short)

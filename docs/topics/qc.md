@@ -34,6 +34,8 @@ PHASE1_SPEC §5–6 for full QC + escalation rules.
 
 ## Done means
 
-- QC screen(s) wired to job phase `qc_work` / `qc_delivery`  
+- QC screen(s) wired to job phase `qc_work`; delivery handoff on **Delivery** screen  
 - Failed work QC reopens steps + blocks delivery photos  
 - Tests for rework + photo gate counts
+
+**Delivery screen:** `DeliveryScreen.tsx` — walkthrough steps, care sheet, `startDeliveryQc` / `completeDeliveryQc`.

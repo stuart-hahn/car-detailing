@@ -8,6 +8,7 @@ import { DEMO_NEW_JOB, type NewJobFormValues } from "./lib/dev/demoJob";
 import { ChecklistScreen } from "./components/ChecklistScreen";
 import { IntakeScreen } from "./components/IntakeScreen";
 import { QcScreen } from "./components/QcScreen";
+import { DeliveryScreen } from "./components/DeliveryScreen";
 import { ReferOutScreen } from "./components/ReferOutScreen";
 import { BackupPanel } from "./components/BackupPanel";
 import { BackupPrompt } from "./components/BackupPrompt";
@@ -112,7 +113,10 @@ export default function App() {
           />
         )}
         {screen === "delivery" && (
-          <PlaceholderScreen title="Delivery" job={activeJob} />
+          <DeliveryScreen
+            job={activeJob}
+            onGoQc={() => setScreen("qc")}
+          />
         )}
         {screen === "history" && (
           <HistoryScreen key={historyListKey} onOpen={loadJob} />
@@ -331,22 +335,6 @@ function NewJobScreen({
         {submitting ? "Creating…" : "Create job → Intake"}
       </button>
     </form>
-  );
-}
-
-
-function PlaceholderScreen({
-  title,
-  job,
-}: {
-  title: string;
-  job: ReturnType<typeof useJobStore.getState>["activeJob"];
-}) {
-  return (
-    <p className="text-slate-400">
-      {title} screen — {job ? `job ${job.id.slice(0, 8)}…` : "no active job"}.
-      Scaffold placeholder.
-    </p>
   );
 }
 
