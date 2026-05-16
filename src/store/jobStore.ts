@@ -82,11 +82,15 @@ interface JobStore {
   intakePhotoTags: string[];
   loading: boolean;
   backupPromptJobId: string | null;
+  /** Bumped after dev clear so History remounts and reloads. */
+  historyListKey: number;
   /** Dev: pending values for the New Job form (consumed on mount). */
   newJobPrefill: NewJobFormValues | null;
   setScreen: (screen: Screen) => void;
   prefillNewJobForm: (values: NewJobFormValues) => void;
   clearNewJobPrefill: () => void;
+  /** Dev: reset UI state after clearing IndexedDB job data. */
+  resetAfterHistoryClear: () => void;
   clearBackupPrompt: () => void;
   loadJob: (id: string) => Promise<void>;
   refreshPhotoTags: () => Promise<void>;
@@ -156,6 +160,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
   intakePhotoTags: [],
   loading: false,
   backupPromptJobId: null,
+  historyListKey: 0,
   newJobPrefill: null,
 
   setScreen: (screen) => set({ screen }),
@@ -169,6 +174,17 @@ export const useJobStore = create<JobStore>((set, get) => ({
     }),
 
   clearNewJobPrefill: () => set({ newJobPrefill: null }),
+
+  resetAfterHistoryClear: () =>
+    set((state) => ({
+      activeJobId: null,
+      activeJob: null,
+      intakePhotoTags: [],
+      backupPromptJobId: null,
+      newJobPrefill: null,
+      historyListKey: state.historyListKey + 1,
+      screen: "history",
+    })),
 
   clearBackupPrompt: () => set({ backupPromptJobId: null }),
 

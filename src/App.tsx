@@ -40,6 +40,7 @@ export default function App() {
     activeJob,
     createJob,
     loadJob,
+    historyListKey,
   } = useJobStore();
   const [ready, setReady] = useState(false);
 
@@ -113,7 +114,9 @@ export default function App() {
         {screen === "delivery" && (
           <PlaceholderScreen title="Delivery" job={activeJob} />
         )}
-        {screen === "history" && <HistoryScreen onOpen={loadJob} />}
+        {screen === "history" && (
+          <HistoryScreen key={historyListKey} onOpen={loadJob} />
+        )}
       </main>
       {import.meta.env.DEV && <DevToolsPanel />}
     </div>

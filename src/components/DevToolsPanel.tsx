@@ -8,6 +8,7 @@ import {
   skipFreshEyesPause,
 } from "../lib/dev/qcShortcuts";
 import { DEMO_NEW_JOB } from "../lib/dev/demoJob";
+import { clearAllJobHistory } from "../lib/dev/clearHistory";
 import { seedDemoMaintenanceJob } from "../lib/dev/seed";
 import type { JobRecord } from "../lib/db";
 import type { MasterStepsFile } from "../lib/types";
@@ -23,6 +24,7 @@ export function DevToolsPanel() {
     setScreen,
     enterQc,
     prefillNewJobForm,
+    resetAfterHistoryClear,
   } = useJobStore();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,6 +52,8 @@ export function DevToolsPanel() {
 
   const btn =
     "rounded-lg border border-amber-700/60 bg-amber-950/80 px-2 py-1.5 text-left text-xs text-amber-100 hover:bg-amber-900/60 disabled:opacity-40";
+  const dangerBtn =
+    "rounded-lg border border-red-700/70 bg-red-950/80 px-2 py-1.5 text-left text-xs text-red-100 hover:bg-red-900/50 disabled:opacity-40 sm:col-span-2";
   const hasJob = Boolean(activeJob);
 
   return (
@@ -147,6 +151,19 @@ export function DevToolsPanel() {
           return "Fresh-eyes pause skipped";
         })
       }
+      dangerBtn={dangerBtn}
+      onClearHistory={() =>
+        run("clearAllJobHistory", async () => {
+          const ok = window.confirm(
+            "Delete ALL jobs, photos, and customers from this device? Settings are kept. This cannot be undone.",
+          );
+          if (!ok) return "Clear history cancelled";
+
+          const counts = await clearAllJobHistory();
+          resetAfterHistoryClear();
+          return `Cleared ${counts.jobs} job(s), ${counts.photos} photo(s), ${counts.customers} customer(s)`;
+        })
+      }
     />
   );
 }
@@ -167,6 +184,8 @@ function DevToolsShell({
   onEnterQc,
   onAdvanceQc,
   onSkipFreshEyes,
+  dangerBtn,
+  onClearHistory,
 }: {
   open: boolean;
   busy: boolean;
@@ -183,6 +202,8 @@ function DevToolsShell({
   onEnterQc: () => void;
   onAdvanceQc: () => void;
   onSkipFreshEyes: () => void;
+  dangerBtn: string;
+  onClearHistory: () => void;
 }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-amber-600/40 bg-slate-950/95 px-4 py-2 backdrop-blur">
@@ -244,6 +265,14 @@ function DevToolsShell({
             onClick={onSkipFreshEyes}
           >
             Skip fresh-eyes pause
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className={dangerBtn}
+            onClick={onClearHistory}
+          >
+            Clear all job history
           </button>
         </div>
       )}
