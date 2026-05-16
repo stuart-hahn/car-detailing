@@ -11,11 +11,11 @@
 - [x] QC screens — work_complete → photos → fresh-eyes → delivery QC; rework loop
 - [x] Export/import — JSON/ZIP + post-delivery backup prompt
 - [x] master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2`
+- [x] Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC
 
 ## Next (priority)
 
-1. **Care sheet generator** — tier-gated text + share
-3. **Customer approval UI** — on-site attest flows for upsells (partial in store)
+1. **Customer approval UI** — on-site attest flows for upsells (partial in store)
 
 ## Deferred (Phase 2+)
 

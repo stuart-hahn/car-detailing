@@ -13,6 +13,7 @@ import { isWorkChecklistComplete } from "../lib/qc/flow";
 import { getFreshEyesProgress } from "../lib/qc/freshEyes";
 import { evaluateFinalPhotoGate } from "../lib/qc/requirements";
 import { applyQcRework } from "../lib/qc/rework";
+import { careSheetFromJob } from "../lib/careSheet/generate";
 import { shouldShowBackupPrompt } from "../lib/backup/prompt";
 import {
   deleteJobPhoto,
@@ -30,6 +31,7 @@ import type {
 } from "../lib/types";
 import {
   db,
+  getOrCreateSettings,
   type JobRecord,
   type QcAttempt,
   type QcState,
@@ -808,6 +810,8 @@ export const useJobStore = create<JobStore>((set, get) => ({
       delivery_passed_at: new Date().toISOString(),
     };
     const now = new Date().toISOString();
+    const settings = await getOrCreateSettings();
+    const care_sheet_content = careSheetFromJob(job, settings);
     const updated: JobRecord = {
       ...job,
       generated_steps: steps,
@@ -815,15 +819,17 @@ export const useJobStore = create<JobStore>((set, get) => ({
       status: "completed",
       phase: "closed",
       completed_at: now,
+      care_sheet_content,
+      care_sheet_generated_at: now,
       audit_log: [
         ...job.audit_log,
         { at: now, action: "job_completed" },
+        { at: now, action: "care_sheet_generated" },
       ],
     };
     await db.jobs.put(updated);
     set({
       activeJob: updated,
-      screen: "history",
       backupPromptJobId: shouldShowBackupPrompt(job.id) ? job.id : null,
     });
     return { ok: true };

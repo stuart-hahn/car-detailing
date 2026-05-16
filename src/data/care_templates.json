@@ -1,0 +1,19 @@
+{
+  "tier_intro": {
+    "refresh": "Your vehicle received our Full Refresh detail today. Follow these care notes for the next 7–14 days.",
+    "showroom": "Your vehicle received our Showroom Reset detail today. Follow these care notes for the next 14–30 days."
+  },
+  "maintenance_snippet": "Thanks for choosing our Maintenance Wash. Keep the vehicle dry for 24 hours if possible. Avoid automatic brushes for 48 hours. Spot-clean spills promptly.",
+  "sections": {
+    "exterior_base": "Exterior care:\n• Avoid automatic car washes with brushes for 7 days.\n• Hand-wash or touchless wash only when needed.\n• Do not park under trees or sprinklers for 48 hours.",
+    "exterior_clay_addon": "Decontamination (clay/iron):\n• Avoid wax-stripping soaps for 2 weeks.\n• Bird droppings and sap: remove promptly — do not let them bake in sun.",
+    "engine_addon": "Engine bay:\n• Avoid pressure-washing the bay for 2 weeks.\n• If you notice unusual smells or smoke, stop driving and contact us.",
+    "interior_base": "Interior care:\n• Leave windows cracked 30–60 minutes after service for airflow.\n• Blot spills immediately; avoid soaking seats or carpets.\n• Use only approved interior cleaners — no harsh solvents on screens or leather.",
+    "interior_leather": "Leather/vinyl:\n• Condition leather every 60–90 days in sun-heavy climates.\n• Wipe spills within 24 hours.",
+    "ozone_addon": "Ozone odor treatment:\n• Ventilate the cabin 30 minutes before driving.\n• Mild ozone scent may linger 24–48 hours — this is normal.",
+    "pet_hair_addon": "Pet hair service:\n• Use a rubber brush or damp glove between full details.\n• Cover seats with a blanket if pets ride regularly.",
+    "wheels": "Wheels & tires:\n• Avoid curb rash and harsh wheel cleaners for 7 days.\n• Tire dressing may sling if over-applied — wipe excess if noticed.",
+    "protection": "Protection:\n• Hand-wash only for the first 2 weeks after sealant/protection steps.\n• Reapply quick detailer between visits if water does not bead.",
+    "closing": "Questions or concerns? Contact us within 48 hours so we can address them while on-site records are fresh."
+  }
+}

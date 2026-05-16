@@ -16,10 +16,11 @@ import {
   getFinalPhotoRequirements,
 } from "../lib/qc/requirements";
 import { QC_REWORK_MAPPINGS } from "../lib/qc/rework";
-import type { JobRecord } from "../lib/db";
+import { getOrCreateSettings, type AppSettings, type JobRecord } from "../lib/db";
 import { useJobStore } from "../store/jobStore";
 import { shouldShowBackupPrompt } from "../lib/backup/prompt";
 import { BackupPrompt } from "./BackupPrompt";
+import { CareSheetPanel } from "./CareSheetPanel";
 import { PhotoCapture } from "./PhotoCapture";
 
 interface QcScreenProps {
@@ -48,7 +49,12 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
   const [skipReason, setSkipReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [, tick] = useState(0);
+
+  useEffect(() => {
+    void getOrCreateSettings().then(setSettings);
+  }, []);
 
   useEffect(() => {
     void refreshPhotoTags();
@@ -379,7 +385,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
         </div>
       )}
 
-      {stage === "delivery_qc" && (
+      {stage === "delivery_qc" && settings && (
         <div className="space-y-4">
           <div>
             <h3 className="font-medium">Delivery QC</h3>
@@ -387,6 +393,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
               Customer-facing check: mats, settings, scent, belongings returned.
             </p>
           </div>
+          <CareSheetPanel job={job} settings={settings} />
           {job.phase !== "qc_delivery" ? (
             <button
               type="button"
@@ -421,6 +428,14 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
               View history
             </button>
           </div>
+          {settings && (
+            <CareSheetPanel
+              job={job}
+              settings={settings}
+              savedContent={job.care_sheet_content}
+              savedAt={job.care_sheet_generated_at}
+            />
+          )}
           {backupPromptJobId === job.id &&
             shouldShowBackupPrompt(job.id) && (
               <BackupPrompt

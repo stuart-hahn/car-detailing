@@ -22,7 +22,7 @@
 
 | Done | Next |
 |------|------|
-| New Job, Intake, Checklist screens, QC screens — work_complete → photos → fresh-eyes → delivery QC; rework loop, Export/import — JSON/ZIP + post-delivery backup prompt, master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2` | Care sheet generator, Customer approval UI |
+| QC screens — work_complete → photos → fresh-eyes → delivery QC; rework loop, Export/import — JSON/ZIP + post-delivery backup prompt, master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2`, Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC | Customer approval UI |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 
@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `58b6267` chore: sync AGENTS.md commit log
 - `165d893` feat: UI updates
 - `aa3e4ef` chore: sync AGENTS.md commit log
 - `a65cc50` feat: UI updates
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `460661e` feat: UI updates
 - `096e7ab` chore: update AGENTS.md
 - `0638051` chore: update AGENTS.md
-- `e0e68ad` chore: update AGENTS.md

@@ -104,6 +104,8 @@ export interface JobRecord {
   intake?: JobIntake;
   refer_out?: ReferOutRecord;
   qc?: QcState;
+  care_sheet_content?: string;
+  care_sheet_generated_at?: string;
   created_at: string;
   completed_at?: string;
   reopened_at?: string;
