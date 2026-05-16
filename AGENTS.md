@@ -49,10 +49,10 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `4cc4f9e` Add agent auto-sync, git hooks, and discovery maintenance docs.
 - `9e537c6` Fix QC gate ignoring locked unsold upsell steps.
 - `2190ecf` Add two-pass QC screens with rework and fresh-eyes flow.
 - `52136ab` docs: progressive discovery for agents
 - `4f0831f` Add swipe-to-complete checklist and step undo policy.
 - `fb39d4f` Add full intake gates, photos, and refer-out flow.
 - `90476a5` Document interview decisions 16–39 in Phase 1 spec.
-- `9081380` Add Phase 1 spec and offline-first PWA scaffold.

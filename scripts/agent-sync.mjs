@@ -177,7 +177,8 @@ function commitWithMessage(message) {
   syncAgents();
   stageSensible();
   git(["add", "AGENTS.md"]);
-  if (git(["diff", "--cached", "--quiet"], { allowFail: true }) === "") {
+  const staged = spawnSync("git", ["diff", "--cached", "--quiet"], { cwd: ROOT });
+  if (staged.status === 0) {
     console.log("agent:commit — nothing staged");
     return;
   }
