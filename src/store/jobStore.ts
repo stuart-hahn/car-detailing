@@ -25,6 +25,11 @@ import { applyQcRework } from "../lib/qc/rework";
 import { careSheetFromJob } from "../lib/careSheet/generate";
 import { shouldShowBackupPrompt } from "../lib/backup/prompt";
 import {
+  applyJobReopen,
+  canReopenJob,
+  isJobImmutable,
+} from "../lib/jobs/reopen";
+import {
   deleteJobPhoto,
   hasJobPhoto,
   listJobPhotoTags,
@@ -143,6 +148,9 @@ interface JobStore {
   completeFreshEyes: () => Promise<{ ok: true } | { ok: false; error: string }>;
   startDeliveryQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
   completeDeliveryQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  reopenJob: (
+    reason: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   grantApproval: (input: {
     key: string;
     scope_note: string;
@@ -241,6 +249,15 @@ export const useJobStore = create<JobStore>((set, get) => ({
         (job.phase === "intake" && !job.intake?.completed_at)
       ) {
         screen = "intake";
+      } else if (job.status === "active" || job.status === "awaiting_approval") {
+        const phase = job.phase;
+        screen = job.reopened_at
+          ? "checklist"
+          : phase === "qc_delivery"
+            ? "delivery"
+            : phase === "qc_work"
+              ? "qc"
+              : "checklist";
       } else if (
         job.status === "completed" ||
         job.phase === "closed" ||
@@ -606,6 +623,9 @@ export const useJobStore = create<JobStore>((set, get) => ({
   completeStep: async (instanceId) => {
     const job = get().activeJob;
     if (!job) return { ok: false, error: "No active job" };
+    if (isJobImmutable(job)) {
+      return { ok: false, error: "Job is locked after 24 hours" };
+    }
     if (job.status !== "active" && job.status !== "awaiting_approval") {
       return { ok: false, error: "Start work before completing steps" };
     }
@@ -664,6 +684,9 @@ export const useJobStore = create<JobStore>((set, get) => ({
   undoStep: async (instanceId, reason) => {
     const job = get().activeJob;
     if (!job) return { ok: false, error: "No active job" };
+    if (isJobImmutable(job)) {
+      return { ok: false, error: "Job is locked after 24 hours" };
+    }
 
     const stepIndex = job.generated_steps.findIndex(
       (s) => s.instance_id === instanceId,
@@ -972,7 +995,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       qc,
       status: "completed",
       phase: "closed",
-      completed_at: now,
+      completed_at: job.completed_at ?? now,
       care_sheet_content,
       care_sheet_generated_at: now,
       audit_log: [
@@ -987,6 +1010,25 @@ export const useJobStore = create<JobStore>((set, get) => ({
       screen: "delivery",
       backupPromptJobId: shouldShowBackupPrompt(job.id) ? job.id : null,
     });
+    return { ok: true };
+  },
+
+  reopenJob: async (reason) => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+    if (!canReopenJob(job)) {
+      return {
+        ok: false,
+        error: "Reopen is only available within 24 hours of delivery",
+      };
+    }
+    if (!reason.trim()) {
+      return { ok: false, error: "Reason required to reopen" };
+    }
+
+    const updated = applyJobReopen(job, reason);
+    await db.jobs.put(updated);
+    set({ activeJob: updated, screen: "checklist" });
     return { ok: true };
   },
 }));

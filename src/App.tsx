@@ -13,8 +13,14 @@ import { ReferOutScreen } from "./components/ReferOutScreen";
 import { BackupPanel } from "./components/BackupPanel";
 import { BackupPrompt } from "./components/BackupPrompt";
 import { shouldShowBackupPrompt } from "./lib/backup/prompt";
+import {
+  canReopenJob,
+  formatReopenTimeLeft,
+  isJobImmutable,
+  msUntilReopenCloses,
+} from "./lib/jobs/reopen";
 import { DevToolsPanel } from "./components/DevToolsPanel";
-import { getOrCreateSettings } from "./lib/db";
+import { getOrCreateSettings, type JobRecord } from "./lib/db";
 import { useJobStore, type Screen } from "./store/jobStore";
 import type { TierId, UpholsteryType } from "./lib/types";
 
@@ -340,15 +346,7 @@ function NewJobScreen({
 
 function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
   const { backupPromptJobId, clearBackupPrompt } = useJobStore();
-  const [jobs, setJobs] = useState<
-    {
-      id: string;
-      customer_name: string;
-      tier: string;
-      status: string;
-      created_at: string;
-    }[]
-  >([]);
+  const [jobs, setJobs] = useState<JobRecord[]>([]);
 
   const reload = () => {
     import("./lib/db").then(({ db }) => {
@@ -390,6 +388,15 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
                   {j.tier} · {j.status} ·{" "}
                   {new Date(j.created_at).toLocaleString()}
                 </p>
+                {j.status === "completed" && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {canReopenJob(j)
+                      ? `Editable ${formatReopenTimeLeft(msUntilReopenCloses(j) ?? 0)}`
+                      : isJobImmutable(j)
+                        ? "Locked"
+                        : null}
+                  </p>
+                )}
               </button>
               {j.status === "completed" && (
                 <BackupPanel jobId={j.id} compact onExported={reload} />

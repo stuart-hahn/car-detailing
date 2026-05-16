@@ -8,6 +8,12 @@ import {
 import { getOrCreateSettings, type AppSettings, type JobRecord } from "../lib/db";
 import { getQcUiStage, isFreshEyesDone } from "../lib/qc/flow";
 import { shouldShowBackupPrompt } from "../lib/backup/prompt";
+import {
+  canReopenJob,
+  formatReopenTimeLeft,
+  isJobImmutable,
+  msUntilReopenCloses,
+} from "../lib/jobs/reopen";
 import type { MasterStepsFile } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
 import { BackupPrompt } from "./BackupPrompt";
@@ -27,6 +33,7 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
     completeStep,
     startDeliveryQc,
     completeDeliveryQc,
+    reopenJob,
     setScreen,
     backupPromptJobId,
     clearBackupPrompt,
@@ -35,6 +42,7 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
 
   useEffect(() => {
     void getOrCreateSettings().then(setSettings);
@@ -83,6 +91,10 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
   }
 
   if (job.status === "completed" || stage === "complete") {
+    const reopenLeft = msUntilReopenCloses(job);
+    const showReopen = canReopenJob(job);
+    const locked = isJobImmutable(job);
+
     return (
       <section className="space-y-4 pb-8">
         <header className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
@@ -95,6 +107,12 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
           {job.completed_at && (
             <p className="mt-1 text-xs text-slate-500">
               Completed {new Date(job.completed_at).toLocaleString()}
+            </p>
+          )}
+          {job.reopened_at && job.reopen_reason && (
+            <p className="mt-2 text-xs text-amber-300/90">
+              Reopened {new Date(job.reopened_at).toLocaleString()} —{" "}
+              {job.reopen_reason}
             </p>
           )}
         </header>
@@ -114,6 +132,47 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
             customerName={job.customer_name}
             onDismiss={clearBackupPrompt}
           />
+        )}
+
+        {showReopen && (
+          <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div>
+                <h3 className="font-medium text-amber-100">Reopen job</h3>
+                {reopenLeft != null && (
+                  <p className="mt-1 text-xs text-amber-200/80">
+                    Editable for {formatReopenTimeLeft(reopenLeft)} more
+                  </p>
+                )}
+              </div>
+            <label className="block text-sm text-slate-300">
+              Reason
+              <textarea
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+                rows={2}
+                placeholder="Why are you reopening this job?"
+                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              />
+            </label>
+            {actionError && (
+              <p className="text-sm text-red-200">{actionError}</p>
+            )}
+            <button
+              type="button"
+              disabled={submitting || !reopenReason.trim()}
+              onClick={() => void run(() => reopenJob(reopenReason))}
+              className="w-full rounded-xl bg-amber-600 py-3 font-medium text-white disabled:opacity-50"
+            >
+              Reopen for edits
+            </button>
+          </div>
+        )}
+
+        {locked && (
+          <p className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-400">
+            This job is locked. Completed jobs can only be edited within 24
+            hours of delivery.
+          </p>
         )}
 
         <button

@@ -14,10 +14,11 @@
 - [x] Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC
 - [x] Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`
 - [x] Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes
+- [x] 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI
 
 ## Next (priority)
 
-1. _(pick from deferred or polish — e.g. 24h job reopen, history filters)_
+1. _(pick from deferred or polish — e.g. history filters, storage estimate in history)_
 
 ## Deferred (Phase 2+)
 

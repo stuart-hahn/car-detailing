@@ -36,7 +36,7 @@ master_steps.json + tier + upholstery + flags + pre_sold_addons + approvals
 | Checklist | ✓ swipe complete + undo + deps |
 | QC | ✓ |
 | Delivery | ✓ handoff steps, care sheet, delivery QC |
-| History | partial |
+| History | ✓ list + backup; reopen badges |
 
 ## Key policies (short)
 

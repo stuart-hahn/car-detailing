@@ -122,6 +122,7 @@ export interface JobRecord {
   created_at: string;
   completed_at?: string;
   reopened_at?: string;
+  reopen_reason?: string;
   audit_log: { at: string; action: string; detail?: string }[];
 }
 

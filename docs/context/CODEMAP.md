@@ -25,6 +25,7 @@
 | `src/lib/slots.ts` | `SLOT_ORDER` canonical |
 | `src/lib/photos/storage.ts` | Compress, save, step photos |
 | `src/lib/backup/` | Export/import JSON & ZIP, backup prompt |
+| `src/lib/jobs/reopen.ts` | 24h reopen window, immutability |
 | `src/lib/types.ts` | Shared TS types |
 
 ## Data files
