@@ -1,0 +1,16 @@
+SERVICE LIMITATION NOTICE
+
+Our mobile detailing service cannot safely perform work on this vehicle due to conditions observed during intake (mold, mildew, biohazard, or similar contamination).
+
+What we observed:
+{{zones}}
+
+Why we cannot proceed:
+Professional remediation is required before standard detailing. Performing a standard detail could spread contamination and creates health and liability risks.
+
+Recommended next step:
+Contact a licensed remediation or specialized interior specialist. {{referral_note}}
+
+If you have questions, contact {{business_name}} at {{phone}}.
+
+This notice does not constitute a medical or environmental diagnosis.

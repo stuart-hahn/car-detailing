@@ -1,5 +1,13 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { JobPhase, JobStatus, StepInstance, TierId, UpholsteryType } from "./types";
+import type {
+  JobIntake,
+  JobPhase,
+  JobStatus,
+  PrimaryGoalId,
+  StepInstance,
+  TierId,
+  UpholsteryType,
+} from "./types";
 
 export interface AppSettings {
   id: "default";
@@ -32,6 +40,22 @@ export interface CustomerRecord {
   visit_count?: number;
 }
 
+export interface JobPhotoBlob {
+  id: string;
+  job_id: string;
+  tag: string;
+  created_at: string;
+  byte_size: number;
+  blob: Blob;
+}
+
+export interface ReferOutRecord {
+  zones: string;
+  internal_notes: string;
+  customer_acknowledged: boolean;
+  acknowledged_at?: string;
+}
+
 export interface JobRecord {
   id: string;
   sop_version: string;
@@ -50,10 +74,14 @@ export interface JobRecord {
   customer_phone: string;
   vehicle_ymmt: string;
   license_plate: string;
+  vin?: string;
   service_address: string;
   technician: string;
   assistant_tech?: string;
-  primary_goal?: string;
+  customer_concern: string;
+  primary_goal?: PrimaryGoalId;
+  intake?: JobIntake;
+  refer_out?: ReferOutRecord;
   created_at: string;
   completed_at?: string;
   reopened_at?: string;
@@ -64,12 +92,20 @@ const db = new Dexie("DetailingSOP") as Dexie & {
   settings: EntityTable<AppSettings, "id">;
   customers: EntityTable<CustomerRecord, "id">;
   jobs: EntityTable<JobRecord, "id">;
+  photos: EntityTable<JobPhotoBlob, "id">;
 };
 
 db.version(1).stores({
   settings: "id",
   customers: "id, name, phone",
   jobs: "id, status, tier, created_at, customer_id",
+});
+
+db.version(2).stores({
+  settings: "id",
+  customers: "id, name, phone",
+  jobs: "id, status, tier, created_at, customer_id",
+  photos: "id, job_id, tag, [job_id+tag]",
 });
 
 export async function getOrCreateSettings(): Promise<AppSettings> {

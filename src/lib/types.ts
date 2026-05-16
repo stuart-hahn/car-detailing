@@ -18,6 +18,47 @@ export type SlotId =
 
 export type UpholsteryType = "cloth" | "leather" | "mixed" | "unknown";
 
+export type PrimaryGoalId =
+  | "maintenance"
+  | "feels_new_again"
+  | "stain_removal"
+  | "odor_removal"
+  | "gloss_improvement"
+  | "scratch_removal"
+  | "sale_prep"
+  | "general_cleaning";
+
+export type IntakePhotoTag = string;
+
+export interface IntakePhotoRecord {
+  id: string;
+  job_id: string;
+  tag: IntakePhotoTag;
+  created_at: string;
+  byte_size: number;
+}
+
+export interface JobIntake {
+  booking_upholstery: UpholsteryType;
+  confirmed_upholstery: UpholsteryType;
+  upholstery_override_reason?: string;
+  vin?: string;
+  material_tags: MaterialTag[];
+  material_zones: MaterialZone[];
+  damage_tags: string[];
+  odor_severity: 0 | 1 | 2 | 3;
+  pet_hair_severity: 0 | 1 | 2;
+  condition_flag_ids: string[];
+  primary_goal: PrimaryGoalId;
+  customer_concern: string;
+  personal_items_ack: boolean;
+  liability_scope_ack: boolean;
+  expectation_ack: boolean;
+  unsafe_environment: boolean;
+  unsafe_environment_note?: string;
+  completed_at?: string;
+}
+
 export type MaterialTag =
   | "cloth"
   | "coated_leather"
