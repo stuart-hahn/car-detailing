@@ -6,6 +6,7 @@ import {
   advanceQcPastFreshEyes,
   skipFreshEyesPause,
 } from "../lib/dev/qcShortcuts";
+import { DEMO_NEW_JOB } from "../lib/dev/demoJob";
 import { seedDemoMaintenanceJob } from "../lib/dev/seed";
 import type { JobRecord } from "../lib/db";
 import type { MasterStepsFile } from "../lib/types";
@@ -14,8 +15,14 @@ import { useJobStore } from "../store/jobStore";
 const masterFile = master as MasterStepsFile;
 
 export function DevToolsPanel() {
-  const { activeJob, loadJob, refreshPhotoTags, setScreen, enterQc } =
-    useJobStore();
+  const {
+    activeJob,
+    loadJob,
+    refreshPhotoTags,
+    setScreen,
+    enterQc,
+    prefillNewJobForm,
+  } = useJobStore();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -71,6 +78,17 @@ export function DevToolsPanel() {
             }
           >
             Fill required photos
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className={btn}
+            onClick={() => {
+              prefillNewJobForm(DEMO_NEW_JOB);
+              setMessage("New job form filled");
+            }}
+          >
+            Fill new job form
           </button>
           <button
             type="button"

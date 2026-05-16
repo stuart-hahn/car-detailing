@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `096e7ab` chore: update AGENTS.md
 - `0638051` chore: update AGENTS.md
 - `e0e68ad` chore: update AGENTS.md
 - `6ff3fe0` Expand master_steps.json to 58 phase-1 templates (sop 2026.05.2)
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `b574257` Add JSON/ZIP export-import and post-delivery backup prompt
 - `a5b154f` feat: QC screen updates
 - `caa5dab` fix: agent:commit staged diff detection
-- `4cc4f9e` Add agent auto-sync, git hooks, and discovery maintenance docs.

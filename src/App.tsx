@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import { DEMO_NEW_JOB, type NewJobFormValues } from "./lib/dev/demoJob";
 import { ChecklistScreen } from "./components/ChecklistScreen";
 import { IntakeScreen } from "./components/IntakeScreen";
 import { QcScreen } from "./components/QcScreen";
@@ -85,7 +91,9 @@ export default function App() {
         className={`mx-auto max-w-lg px-4 py-6${import.meta.env.DEV ? " pb-36" : ""}`}
       >
         {screen === "home" && <HomeScreen onNavigate={setScreen} />}
-        {screen === "new_job" && <NewJobScreen onCreate={createJob} />}
+        {screen === "new_job" && (
+          <NewJobScreen onCreate={createJob} />
+        )}
         {screen === "intake" && activeJob && <IntakeScreen job={activeJob} />}
         {screen === "refer_out" && activeJob && (
           <ReferOutScreen job={activeJob} />
@@ -137,6 +145,18 @@ function HomeScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   );
 }
 
+const EMPTY_NEW_JOB: NewJobFormValues = {
+  tier: "refresh",
+  upholstery_type: "cloth",
+  pre_sold_addons: [],
+  customer_name: "",
+  customer_phone: "",
+  vehicle_ymmt: "",
+  license_plate: "",
+  service_address: "",
+  vin: "",
+};
+
 function NewJobScreen({
   onCreate,
 }: {
@@ -152,30 +172,60 @@ function NewJobScreen({
     vin?: string;
   }) => Promise<string>;
 }) {
-  const [tier, setTier] = useState<TierId>("refresh");
-  const [upholstery, setUpholstery] = useState<UpholsteryType>("cloth");
+  const { newJobPrefill, clearNewJobPrefill } = useJobStore();
+  const [form, setForm] = useState<NewJobFormValues>(EMPTY_NEW_JOB);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!newJobPrefill) return;
+    setForm(newJobPrefill);
+    clearNewJobPrefill();
+  }, [newJobPrefill, clearNewJobPrefill]);
+
+  function applyDemoValues(values: NewJobFormValues = DEMO_NEW_JOB) {
+    setForm(values);
+  }
+
+  function toggleAddon(addonId: string) {
+    setForm((prev) => {
+      const has = prev.pre_sold_addons.includes(addonId);
+      return {
+        ...prev,
+        pre_sold_addons: has
+          ? prev.pre_sold_addons.filter((id) => id !== addonId)
+          : [...prev.pre_sold_addons, addonId],
+      };
+    });
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
     setSubmitting(true);
     await onCreate({
-      tier,
-      upholstery_type: upholstery,
-      pre_sold_addons: fd.getAll("addons") as string[],
-      customer_name: String(fd.get("customer_name") ?? ""),
-      customer_phone: String(fd.get("customer_phone") ?? ""),
-      vehicle_ymmt: String(fd.get("vehicle_ymmt") ?? ""),
-      license_plate: String(fd.get("license_plate") ?? ""),
-      service_address: String(fd.get("service_address") ?? ""),
-      vin: String(fd.get("vin") ?? "") || undefined,
+      ...form,
+      vin: form.vin.trim() || undefined,
     });
     setSubmitting(false);
   }
 
+  const field = (key: keyof Omit<NewJobFormValues, "tier" | "upholstery_type" | "pre_sold_addons">) =>
+    ({
+      value: form[key],
+      onChange: (e: ChangeEvent<HTMLInputElement>) =>
+        setForm((prev) => ({ ...prev, [key]: e.target.value })),
+    }) as const;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {import.meta.env.DEV && (
+        <button
+          type="button"
+          onClick={() => applyDemoValues()}
+          className="w-full rounded-lg border border-amber-700/50 bg-amber-950/50 px-3 py-2 text-sm text-amber-200 hover:bg-amber-900/40"
+        >
+          Fill demo values
+        </button>
+      )}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-slate-300">Package</legend>
         <div className="grid gap-2">
@@ -183,7 +233,7 @@ function NewJobScreen({
             <label
               key={t.id}
               className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 ${
-                tier === t.id
+                form.tier === t.id
                   ? "border-sky-500 bg-sky-500/10"
                   : "border-slate-800"
               }`}
@@ -192,8 +242,10 @@ function NewJobScreen({
                 type="radio"
                 name="tier"
                 value={t.id}
-                checked={tier === t.id}
-                onChange={() => setTier(t.id)}
+                checked={form.tier === t.id}
+                onChange={() =>
+                  setForm((prev) => ({ ...prev, tier: t.id }))
+                }
               />
               <span>
                 {t.label}
@@ -209,8 +261,13 @@ function NewJobScreen({
       <label className="block space-y-1">
         <span className="text-sm text-slate-400">Upholstery (booking default)</span>
         <select
-          value={upholstery}
-          onChange={(e) => setUpholstery(e.target.value as UpholsteryType)}
+          value={form.upholstery_type}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              upholstery_type: e.target.value as UpholsteryType,
+            }))
+          }
           className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2"
         >
           <option value="cloth">Cloth</option>
@@ -225,29 +282,40 @@ function NewJobScreen({
           Pre-sold add-ons
         </legend>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="addons" value="addon_clay" />
+          <input
+            type="checkbox"
+            checked={form.pre_sold_addons.includes("addon_clay")}
+            onChange={() => toggleAddon("addon_clay")}
+          />
           Clay + iron
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="addons" value="addon_engine_bay" />
+          <input
+            type="checkbox"
+            checked={form.pre_sold_addons.includes("addon_engine_bay")}
+            onChange={() => toggleAddon("addon_engine_bay")}
+          />
           Engine bay
         </label>
       </fieldset>
 
-      {[
-        ["customer_name", "Customer name"],
-        ["customer_phone", "Phone"],
-        ["vehicle_ymmt", "Year / make / model"],
-        ["license_plate", "License plate"],
-        ["service_address", "Service address"],
-        ["vin", "VIN (optional)"],
-      ].map(([name, label]) => (
+      {(
+        [
+          ["customer_name", "Customer name", true],
+          ["customer_phone", "Phone", true],
+          ["vehicle_ymmt", "Year / make / model", true],
+          ["license_plate", "License plate", true],
+          ["service_address", "Service address", true],
+          ["vin", "VIN (optional)", false],
+        ] as const
+      ).map(([name, label, required]) => (
         <label key={name} className="block space-y-1">
           <span className="text-sm text-slate-400">{label}</span>
           <input
             name={name}
-            required={name !== "vin"}
+            required={required}
             className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2"
+            {...field(name)}
           />
         </label>
       ))}

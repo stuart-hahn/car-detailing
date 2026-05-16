@@ -20,6 +20,7 @@ import {
   listJobPhotoTags,
   stepPhotoTag,
 } from "../lib/photos/storage";
+import type { NewJobFormValues } from "../lib/dev/demoJob";
 import type {
   JobInput,
   JobIntake,
@@ -81,7 +82,11 @@ interface JobStore {
   intakePhotoTags: string[];
   loading: boolean;
   backupPromptJobId: string | null;
+  /** Dev: pending values for the New Job form (consumed on mount). */
+  newJobPrefill: NewJobFormValues | null;
   setScreen: (screen: Screen) => void;
+  prefillNewJobForm: (values: NewJobFormValues) => void;
+  clearNewJobPrefill: () => void;
   clearBackupPrompt: () => void;
   loadJob: (id: string) => Promise<void>;
   refreshPhotoTags: () => Promise<void>;
@@ -151,8 +156,19 @@ export const useJobStore = create<JobStore>((set, get) => ({
   intakePhotoTags: [],
   loading: false,
   backupPromptJobId: null,
+  newJobPrefill: null,
 
   setScreen: (screen) => set({ screen }),
+
+  prefillNewJobForm: (values) =>
+    set({
+      newJobPrefill: values,
+      screen: "new_job",
+      activeJobId: null,
+      activeJob: null,
+    }),
+
+  clearNewJobPrefill: () => set({ newJobPrefill: null }),
 
   clearBackupPrompt: () => set({ backupPromptJobId: null }),
 

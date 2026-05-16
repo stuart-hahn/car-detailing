@@ -7,6 +7,7 @@ import {
   applyCompletedWorkSteps,
   completeAllWorkSteps,
 } from "./completeWork";
+import { DEMO_CUSTOMER } from "./demoJob";
 import { fillRequiredPhotos } from "./fillPhotos";
 
 const masterFile = master as MasterStepsFile;
@@ -17,14 +18,6 @@ export interface SeedDemoOptions {
   /** Where to land after seeding. Default `checklist`. */
   target?: SeedDemoTarget;
 }
-
-const DEMO = {
-  customer_name: "Dev Test Customer",
-  customer_phone: "555-0100",
-  vehicle_ymmt: "2024 Test Sedan",
-  license_plate: "DEV-001",
-  service_address: "123 Dev Lane",
-} as const;
 
 function markQcStep(
   steps: JobRecord["generated_steps"],
@@ -73,11 +66,11 @@ export async function seedDemoMaintenanceJob(
     approvals: [],
     generated_steps: generated.generated_steps,
     warn_banners: generated.warn_banners,
-    customer_name: DEMO.customer_name,
-    customer_phone: DEMO.customer_phone,
-    vehicle_ymmt: DEMO.vehicle_ymmt,
-    license_plate: DEMO.license_plate,
-    service_address: DEMO.service_address,
+    customer_name: DEMO_CUSTOMER.customer_name,
+    customer_phone: DEMO_CUSTOMER.customer_phone,
+    vehicle_ymmt: DEMO_CUSTOMER.vehicle_ymmt,
+    license_plate: DEMO_CUSTOMER.license_plate,
+    service_address: DEMO_CUSTOMER.service_address,
     technician: settings?.owner_name ?? "Technician",
     customer_concern: "Development test job — not a real vehicle.",
     intake: {
