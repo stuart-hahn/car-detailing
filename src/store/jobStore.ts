@@ -1,7 +1,15 @@
 import { create } from "zustand";
 import { ulid } from "ulid";
 import master from "../data/master_steps.json";
-import { generateChecklist } from "../lib/generator";
+import {
+  approvalEvidencePhotoTag,
+  buildApprovalRecord,
+  cancelDeclinedApprovalSteps,
+  getPendingApprovals,
+  requiresEvidencePhoto,
+  resolveJobStatusAfterApproval,
+} from "../lib/approvals";
+import { appendApprovedSteps, generateChecklist } from "../lib/generator";
 import { deriveGeneratorFlags, hasHardBlockFlag } from "../lib/intake/flags";
 import { evaluateIntakeGate } from "../lib/intake/gates";
 import {
@@ -134,6 +142,28 @@ interface JobStore {
   completeFreshEyes: () => Promise<{ ok: true } | { ok: false; error: string }>;
   startDeliveryQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
   completeDeliveryQc: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  grantApproval: (input: {
+    key: string;
+    scope_note: string;
+    price_dollars: number;
+    customer_attested: boolean;
+    tech_attested: boolean;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  declineApproval: (input: {
+    key: string;
+    reason?: string;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+}
+
+function workStartedStatuses(status: JobRecord["status"]): boolean {
+  return status === "active" || status === "awaiting_approval";
+}
+
+function withApprovalStatus(job: JobRecord): JobRecord {
+  const workStarted = workStartedStatuses(job.status);
+  const status = resolveJobStatusAfterApproval(job, workStarted);
+  if (status === job.status) return job;
+  return { ...job, status };
 }
 
 function emptyQcState(): QcState {
@@ -385,7 +415,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       completed_at: new Date().toISOString(),
     };
 
-    const updated: JobRecord = {
+    let updated: JobRecord = {
       ...job,
       intake: completedIntake,
       flags,
@@ -401,7 +431,9 @@ export const useJobStore = create<JobStore>((set, get) => ({
     await db.jobs.put(updated);
     await get().regenerateChecklist({ flags });
     const fresh = await db.jobs.get(job.id);
-    set({ activeJob: fresh ?? updated, screen: "checklist" });
+    const synced = withApprovalStatus(fresh ?? updated);
+    await db.jobs.put(synced);
+    set({ activeJob: synced, screen: "checklist" });
     return { ok: true };
   },
 
@@ -446,7 +478,108 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
+    set({ activeJob: withApprovalStatus(updated) });
+  },
+
+  grantApproval: async ({
+    key,
+    scope_note,
+    price_dollars,
+    customer_attested,
+    tech_attested,
+  }) => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+
+    const pending = getPendingApprovals(job);
+    const item = pending.find((p) => p.key === key);
+    if (!item) return { ok: false, error: "No pending approval for this item" };
+    if (!scope_note.trim()) {
+      return { ok: false, error: "Scope note required" };
+    }
+    if (!customer_attested || !tech_attested) {
+      return { ok: false, error: "Customer and technician attestation required" };
+    }
+    if (Number.isNaN(price_dollars) || price_dollars < 0) {
+      return { ok: false, error: "Enter a valid price" };
+    }
+    if (requiresEvidencePhoto(item, price_dollars)) {
+      const hasPhoto = await hasJobPhoto(
+        job.id,
+        approvalEvidencePhotoTag(key),
+      );
+      if (!hasPhoto) {
+        return { ok: false, error: "Evidence photo required for this approval" };
+      }
+    }
+
+    const at = new Date().toISOString();
+    const newApprovals = [
+      ...new Set([...job.approvals, ...item.approvalKeys]),
+    ];
+    const steps = appendApprovedSteps(
+      job.generated_steps,
+      item.templateIds,
+      masterFile,
+      new Set(job.pre_sold_addons),
+      new Set(newApprovals),
+    );
+    const record = buildApprovalRecord(
+      item,
+      scope_note,
+      price_dollars,
+      at,
+    );
+    const nextJob: JobRecord = {
+      ...job,
+      approvals: newApprovals,
+      approval_records: [...(job.approval_records ?? []), record],
+      generated_steps: steps,
+      audit_log: [
+        ...job.audit_log,
+        {
+          at,
+          action: "approval_granted",
+          detail: `${item.key}:${price_dollars}`,
+        },
+      ],
+    };
+    const updated = withApprovalStatus(nextJob);
+    await db.jobs.put(updated);
     set({ activeJob: updated });
+    return { ok: true };
+  },
+
+  declineApproval: async ({ key, reason }) => {
+    const job = get().activeJob;
+    if (!job) return { ok: false, error: "No active job" };
+
+    const pending = getPendingApprovals(job);
+    const item = pending.find((p) => p.key === key);
+    if (!item) return { ok: false, error: "No pending approval for this item" };
+
+    const at = new Date().toISOString();
+    const steps = cancelDeclinedApprovalSteps(
+      job.generated_steps,
+      item.templateIds,
+    );
+    const nextJob: JobRecord = {
+      ...job,
+      generated_steps: steps,
+      declined_approvals: [...new Set([...(job.declined_approvals ?? []), item.key])],
+      audit_log: [
+        ...job.audit_log,
+        {
+          at,
+          action: "approval_declined",
+          detail: `${item.key}${reason ? `: ${reason.trim()}` : ""}`,
+        },
+      ],
+    };
+    const updated = withApprovalStatus(nextJob);
+    await db.jobs.put(updated);
+    set({ activeJob: updated });
+    return { ok: true };
   },
 
   completeStep: async (instanceId) => {

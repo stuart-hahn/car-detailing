@@ -12,10 +12,11 @@
 - [x] Export/import — JSON/ZIP + post-delivery backup prompt
 - [x] master_steps.json — 58 phase-1 templates (55 executable), professional names, sop `2026.05.2`
 - [x] Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC
+- [x] Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`
 
 ## Next (priority)
 
-1. **Customer approval UI** — on-site attest flows for upsells (partial in store)
+1. _(pick from deferred or polish)_
 
 ## Deferred (Phase 2+)
 

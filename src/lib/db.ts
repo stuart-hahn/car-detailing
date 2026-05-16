@@ -49,6 +49,17 @@ export interface JobPhotoBlob {
   blob: Blob;
 }
 
+export interface CustomerApprovalRecord {
+  key: string;
+  display_name: string;
+  scope_note: string;
+  price_dollars: number;
+  labor_minutes: number;
+  customer_attested_at: string;
+  tech_attested_at: string;
+  approved_at: string;
+}
+
 export interface ReferOutRecord {
   zones: string;
   internal_notes: string;
@@ -87,6 +98,8 @@ export interface JobRecord {
   pre_sold_addons: string[];
   flags: string[];
   approvals: string[];
+  declined_approvals?: string[];
+  approval_records?: CustomerApprovalRecord[];
   generated_steps: StepInstance[];
   warn_banners: unknown[];
   customer_id?: string;

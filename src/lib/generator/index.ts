@@ -122,7 +122,7 @@ function resolveFlagSteps(
   return { steps: [] };
 }
 
-function inferAddonForFlag(flag: string): string | null {
+export function inferAddonForFlag(flag: string): string | null {
   const map: Record<string, string> = {
     pet_hair_severe: "addon_pet_hair_removal",
     odor_3: "addon_ozone_treatment",

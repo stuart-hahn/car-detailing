@@ -21,6 +21,8 @@ import {
 import type { JobRecord } from "../lib/db";
 import type { MasterStepsFile, StepInstance } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
+import { getPendingApprovals, hasBlockingPendingApproval } from "../lib/approvals";
+import { ApprovalPanel } from "./ApprovalPanel";
 import { PhotoCapture } from "./PhotoCapture";
 import { SwipeStepCard } from "./SwipeStepCard";
 
@@ -99,6 +101,8 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const actionableSteps = getActionableWorkSteps(activeJob.generated_steps);
   const completed = actionableSteps.filter((s) => s.status === "completed").length;
   const lockedUpsellCount = countLockedUpsellSteps(activeJob.generated_steps);
+  const pendingApprovals = getPendingApprovals(activeJob);
+  const blockingApproval = hasBlockingPendingApproval(activeJob);
   const reworkPending = hasPendingRework(activeJob.generated_steps);
   const qcReady = isWorkChecklistComplete(activeJob.generated_steps);
 
@@ -160,13 +164,26 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
         </p>
         <p className="mt-1 font-medium capitalize">{job.tier}</p>
         {!workStarted && (
-          <button
-            type="button"
-            onClick={() => void startWork()}
-            className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
-          >
-            Start work — unlock checklist
-          </button>
+          <>
+            {blockingApproval && (
+              <p className="mt-2 text-xs text-amber-300">
+                Complete required customer approval below before starting
+                blocked work.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => void startWork()}
+              className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
+            >
+              Start work — unlock checklist
+            </button>
+          </>
+        )}
+        {activeJob.status === "awaiting_approval" && workStarted && (
+          <p className="mt-2 text-xs text-amber-300">
+            Awaiting customer approval for flagged add-ons.
+          </p>
         )}
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
           <div
@@ -181,7 +198,13 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
         <p className="mt-2 text-xs text-slate-500">
           {completed} / {actionableSteps.length} steps · swipe right to complete
         </p>
-        {lockedUpsellCount > 0 && (
+        {pendingApprovals.length > 0 && (
+          <p className="mt-2 text-xs text-slate-500">
+            {pendingApprovals.length} upsell
+            {pendingApprovals.length === 1 ? "" : "s"} need customer approval
+          </p>
+        )}
+        {lockedUpsellCount > 0 && !pendingApprovals.length && (
           <p className="mt-2 text-xs text-slate-500">
             {lockedUpsellCount} upsell step
             {lockedUpsellCount === 1 ? "" : "s"} locked (not sold) — does not
@@ -206,6 +229,8 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
           </button>
         )}
       </div>
+
+      <ApprovalPanel job={activeJob} />
 
       {actionError && (
         <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
