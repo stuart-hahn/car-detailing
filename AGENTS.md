@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `0638051` chore: update AGENTS.md
 - `e0e68ad` chore: update AGENTS.md
 - `6ff3fe0` Expand master_steps.json to 58 phase-1 templates (sop 2026.05.2)
 - `78b819b` chore: sync AGENTS.md commit log after export/import finish

@@ -6,6 +6,7 @@ import { ReferOutScreen } from "./components/ReferOutScreen";
 import { BackupPanel } from "./components/BackupPanel";
 import { BackupPrompt } from "./components/BackupPrompt";
 import { shouldShowBackupPrompt } from "./lib/backup/prompt";
+import { DevToolsPanel } from "./components/DevToolsPanel";
 import { getOrCreateSettings } from "./lib/db";
 import { useJobStore, type Screen } from "./store/jobStore";
 import type { TierId, UpholsteryType } from "./lib/types";
@@ -80,7 +81,9 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-lg px-4 py-6">
+      <main
+        className={`mx-auto max-w-lg px-4 py-6${import.meta.env.DEV ? " pb-36" : ""}`}
+      >
         {screen === "home" && <HomeScreen onNavigate={setScreen} />}
         {screen === "new_job" && <NewJobScreen onCreate={createJob} />}
         {screen === "intake" && activeJob && <IntakeScreen job={activeJob} />}
@@ -104,6 +107,7 @@ export default function App() {
         )}
         {screen === "history" && <HistoryScreen onOpen={loadJob} />}
       </main>
+      {import.meta.env.DEV && <DevToolsPanel />}
     </div>
   );
 }
