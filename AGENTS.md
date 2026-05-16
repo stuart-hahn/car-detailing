@@ -49,10 +49,10 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `6ff3fe0` Expand master_steps.json to 58 phase-1 templates (sop 2026.05.2)
 - `78b819b` chore: sync AGENTS.md commit log after export/import finish
 - `b574257` Add JSON/ZIP export-import and post-delivery backup prompt
 - `a5b154f` feat: QC screen updates
 - `caa5dab` fix: agent:commit staged diff detection
 - `4cc4f9e` Add agent auto-sync, git hooks, and discovery maintenance docs.
 - `9e537c6` Fix QC gate ignoring locked unsold upsell steps.
-- `2190ecf` Add two-pass QC screens with rework and fresh-eyes flow.
