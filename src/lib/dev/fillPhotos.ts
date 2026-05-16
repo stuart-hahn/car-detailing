@@ -1,9 +1,9 @@
 import type { JobRecord } from "../db";
-import { listJobPhotoTags, saveJobPhoto } from "../photos/storage";
+import { listJobPhotoTags } from "../photos/storage";
 import type { MasterStepsFile } from "../types";
 import { logDevToolError, logDevToolStart } from "./log";
 import { collectRequiredPhotoTags } from "./photoTags";
-import { createPlaceholderImageFile } from "./placeholder";
+import { saveDevPlaceholderPhoto } from "./savePlaceholderPhoto";
 
 export interface FillPhotosResult {
   filled: number;
@@ -35,11 +35,10 @@ export async function fillRequiredPhotos(
       continue;
     }
     try {
-      const file = createPlaceholderImageFile();
-      const result = await saveJobPhoto(job.id, tag, file);
+      const result = await saveDevPlaceholderPhoto(job.id, tag);
       if (result.error) {
         errors.push({ tag, message: result.error });
-        logDevToolError("fillRequiredPhotos", new Error(result.error), {
+        logDevToolError("fillRequiredPhotos:tag", new Error(result.error), {
           jobId: job.id,
           tag,
         });
@@ -50,13 +49,13 @@ export async function fillRequiredPhotos(
       const message =
         error instanceof Error ? error.message : "Unknown save error";
       errors.push({ tag, message });
-      logDevToolError("fillRequiredPhotos", error, { jobId: job.id, tag });
+      logDevToolError("fillRequiredPhotos:tag", error, { jobId: job.id, tag });
     }
   }
 
   if (errors.length > 0) {
     logDevToolError(
-      "fillRequiredPhotos",
+      "fillRequiredPhotos:summary",
       new Error(`${errors.length} photo(s) failed`),
       { jobId: job.id, errors },
     );

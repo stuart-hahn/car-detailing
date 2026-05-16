@@ -8,11 +8,11 @@ import {
   getActionableWorkSteps,
   getIncompleteActionableSteps,
 } from "../qc/flow";
-import { hasJobPhoto, saveJobPhoto, stepPhotoTag } from "../photos/storage";
+import { hasJobPhoto, stepPhotoTag } from "../photos/storage";
+import { saveDevPlaceholderPhoto } from "./savePlaceholderPhoto";
 import type { MasterStepsFile } from "../types";
 import { logDevToolError, logDevToolStart } from "./log";
 import { fillRequiredPhotos } from "./fillPhotos";
-import { createPlaceholderImageFile } from "./placeholder";
 
 const masterFile = master as MasterStepsFile;
 
@@ -42,7 +42,7 @@ async function completeStepsOnJob(job: JobRecord): Promise<{
       if (template?.photo_required) {
         const tag = stepPhotoTag(step.instance_id);
         if (!(await hasJobPhoto(job.id, tag))) {
-          await saveJobPhoto(job.id, tag, createPlaceholderImageFile());
+          await saveDevPlaceholderPhoto(job.id, tag);
         }
       }
 

@@ -67,9 +67,10 @@ export function DevToolsPanel() {
           await refreshPhotoTags();
           await loadJob(job.id);
           if (r.failed > 0) {
-            throw new Error(
-              `${r.failed} photo(s) failed — see console [dev-tools]`,
-            );
+            const detail = r.errors
+              .map((e) => `${e.tag}: ${e.message}`)
+              .join("; ");
+            throw new Error(`${r.failed} photo(s) failed: ${detail}`);
           }
           return `Filled ${r.filled} photo(s) (${r.skipped} already had)`;
         })

@@ -1,24 +1,33 @@
-/** Tiny valid JPEG for dev photo gates (gray 2×2). */
-const PLACEHOLDER_JPEG_BASE64 =
-  "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQACEQADAPwA/9k=";
+/** Dev placeholder image — generated via canvas so decode/compress always works. */
 
-let cachedBytes: Uint8Array | null = null;
+let cachedBlob: Blob | null = null;
 
-function placeholderBytes(): Uint8Array {
-  if (cachedBytes) return cachedBytes;
-  const binary = atob(PLACEHOLDER_JPEG_BASE64);
-  cachedBytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    cachedBytes[i] = binary.charCodeAt(i);
+export async function createPlaceholderBlob(): Promise<Blob> {
+  if (typeof document === "undefined") {
+    throw new Error("createPlaceholderBlob requires a browser (dev tools only)");
   }
-  return cachedBytes;
-}
 
-/** Fresh File per call — reusing one File breaks createImageBitmap on 2+ saves. */
-export function createPlaceholderImageFile(): File {
-  const bytes = placeholderBytes();
-  return new File([new Uint8Array(bytes)], "dev-placeholder.jpg", {
-    type: "image/jpeg",
-    lastModified: Date.now(),
+  if (cachedBlob) {
+    return cachedBlob.slice(0, cachedBlob.size, cachedBlob.type);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 8;
+  canvas.height = 8;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2d not available");
+
+  ctx.fillStyle = "#6b7280";
+  ctx.fillRect(0, 0, 8, 8);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("canvas.toBlob failed"))),
+      "image/jpeg",
+      0.82,
+    );
   });
+
+  cachedBlob = blob;
+  return blob.slice(0, blob.size, blob.type);
 }

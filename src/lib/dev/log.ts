@@ -16,6 +16,15 @@ export function logDevToolError(
 ) {
   if (!import.meta.env.DEV) return;
   const err = normalizeError(error);
+  if (context?.errors && Array.isArray(context.errors)) {
+    console.error(PREFIX, action, "failed", err);
+    console.table(context.errors);
+    const { errors, ...rest } = context;
+    if (Object.keys(rest).length > 0) {
+      console.error(PREFIX, action, "context", rest);
+    }
+    return;
+  }
   if (context) {
     console.error(PREFIX, action, "failed", { ...context, error: err });
   } else {
