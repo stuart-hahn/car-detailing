@@ -10,6 +10,7 @@ import {
 } from "../qc/flow";
 import { hasJobPhoto, saveJobPhoto, stepPhotoTag } from "../photos/storage";
 import type { MasterStepsFile } from "../types";
+import { logDevToolError, logDevToolStart } from "./log";
 import { fillRequiredPhotos } from "./fillPhotos";
 import { createPlaceholderImageFile } from "./placeholder";
 
@@ -27,7 +28,6 @@ async function completeStepsOnJob(job: JobRecord): Promise<{
   await fillRequiredPhotos(job, masterFile);
 
   const steps = [...job.generated_steps];
-  const file = createPlaceholderImageFile();
   let completed = 0;
 
   for (;;) {
@@ -42,7 +42,7 @@ async function completeStepsOnJob(job: JobRecord): Promise<{
       if (template?.photo_required) {
         const tag = stepPhotoTag(step.instance_id);
         if (!(await hasJobPhoto(job.id, tag))) {
-          await saveJobPhoto(job.id, tag, file);
+          await saveJobPhoto(job.id, tag, createPlaceholderImageFile());
         }
       }
 
@@ -69,12 +69,18 @@ async function completeStepsOnJob(job: JobRecord): Promise<{
 export async function completeAllWorkSteps(
   job: JobRecord,
 ): Promise<CompleteWorkResult> {
-  const { steps, completed } = await completeStepsOnJob(job);
-  const updated = applyCompletedWorkSteps(job, steps);
-  await db.jobs.put(updated);
+  logDevToolStart("completeAllWorkSteps", { jobId: job.id });
+  try {
+    const { steps, completed } = await completeStepsOnJob(job);
+    const updated = applyCompletedWorkSteps(job, steps);
+    await db.jobs.put(updated);
 
-  const remaining = getIncompleteActionableSteps(steps).length;
-  return { completed, remaining };
+    const remaining = getIncompleteActionableSteps(steps).length;
+    return { completed, remaining };
+  } catch (error) {
+    logDevToolError("completeAllWorkSteps", error, { jobId: job.id });
+    throw error;
+  }
 }
 
 export function applyCompletedWorkSteps(

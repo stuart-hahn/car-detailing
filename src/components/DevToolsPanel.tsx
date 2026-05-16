@@ -2,6 +2,7 @@ import { useState } from "react";
 import master from "../data/master_steps.json";
 import { fillRequiredPhotos } from "../lib/dev/fillPhotos";
 import { completeAllWorkSteps } from "../lib/dev/completeWork";
+import { logDevToolError, logDevToolStart } from "../lib/dev/log";
 import {
   advanceQcPastFreshEyes,
   skipFreshEyesPause,
@@ -27,14 +28,21 @@ export function DevToolsPanel() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function run(fn: () => Promise<string | void>) {
+  async function run(action: string, fn: () => Promise<string | void>) {
     setBusy(true);
     setMessage(null);
+    logDevToolStart(action);
     try {
       const detail = await fn();
       if (detail) setMessage(detail);
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed");
+    } catch (error) {
+      logDevToolError(action, error, {
+        jobId: activeJob?.id,
+        screen: useJobStore.getState().screen,
+      });
+      const text =
+        error instanceof Error ? error.message : "Dev tool failed";
+      setMessage(text);
     } finally {
       setBusy(false);
     }
@@ -45,11 +53,142 @@ export function DevToolsPanel() {
   const hasJob = Boolean(activeJob);
 
   return (
+    <DevToolsShell
+      open={open}
+      busy={busy}
+      message={message}
+      hasJob={hasJob}
+      btn={btn}
+      onToggle={() => setOpen((v) => !v)}
+      onFillPhotos={() =>
+        run("fillRequiredPhotos", async () => {
+          const job = requireJob(activeJob);
+          const r = await fillRequiredPhotos(job, masterFile);
+          await refreshPhotoTags();
+          await loadJob(job.id);
+          if (r.failed > 0) {
+            throw new Error(
+              `${r.failed} photo(s) failed — see console [dev-tools]`,
+            );
+          }
+          return `Filled ${r.filled} photo(s) (${r.skipped} already had)`;
+        })
+      }
+      onFillNewJob={() => {
+        try {
+          logDevToolStart("prefillNewJobForm");
+          prefillNewJobForm(DEMO_NEW_JOB);
+          setMessage("New job form filled");
+        } catch (error) {
+          logDevToolError("prefillNewJobForm", error);
+          setMessage(
+            error instanceof Error ? error.message : "Prefill failed",
+          );
+        }
+      }}
+      onSeedIntake={() =>
+        run("seedDemoMaintenanceJob:intake", async () => {
+          const id = await seedDemoMaintenanceJob({ target: "intake" });
+          await loadJob(id);
+          setScreen("intake");
+          return "Maintenance demo at intake";
+        })
+      }
+      onSeedChecklist={() =>
+        run("seedDemoMaintenanceJob:checklist", async () => {
+          const id = await seedDemoMaintenanceJob({ target: "checklist" });
+          await loadJob(id);
+          setScreen("checklist");
+          return "Maintenance demo on checklist";
+        })
+      }
+      onSeedQc={() =>
+        run("seedDemoMaintenanceJob:qc", async () => {
+          const id = await seedDemoMaintenanceJob({ target: "qc" });
+          await loadJob(id);
+          setScreen("qc");
+          return "Maintenance demo at QC (work QC passed)";
+        })
+      }
+      onCompleteWork={() =>
+        run("completeAllWorkSteps", async () => {
+          const job = requireJob(activeJob);
+          const r = await completeAllWorkSteps(job);
+          await loadJob(job.id);
+          return (
+            `Completed ${r.completed} step(s)` +
+            (r.remaining ? ` · ${r.remaining} still blocked` : "")
+          );
+        })
+      }
+      onEnterQc={() =>
+        run("enterQc", async () => {
+          const r = await enterQc();
+          if (!r.ok) throw new Error(r.error);
+          return "QC screen ready";
+        })
+      }
+      onAdvanceQc={() =>
+        run("advanceQcPastFreshEyes", async () => {
+          const job = requireJob(activeJob);
+          await advanceQcPastFreshEyes(job);
+          await refreshPhotoTags();
+          await loadJob(job.id);
+          setScreen("qc");
+          return "Work QC + final photos + fresh-eyes skip";
+        })
+      }
+      onSkipFreshEyes={() =>
+        run("skipFreshEyesPause", async () => {
+          const job = requireJob(activeJob);
+          await skipFreshEyesPause(job);
+          await loadJob(job.id);
+          return "Fresh-eyes pause skipped";
+        })
+      }
+    />
+  );
+}
+
+function DevToolsShell({
+  open,
+  busy,
+  message,
+  hasJob,
+  btn,
+  onToggle,
+  onFillPhotos,
+  onFillNewJob,
+  onSeedIntake,
+  onSeedChecklist,
+  onSeedQc,
+  onCompleteWork,
+  onEnterQc,
+  onAdvanceQc,
+  onSkipFreshEyes,
+}: {
+  open: boolean;
+  busy: boolean;
+  message: string | null;
+  hasJob: boolean;
+  btn: string;
+  onToggle: () => void;
+  onFillPhotos: () => void;
+  onFillNewJob: () => void;
+  onSeedIntake: () => void;
+  onSeedChecklist: () => void;
+  onSeedQc: () => void;
+  onCompleteWork: () => void;
+  onEnterQc: () => void;
+  onAdvanceQc: () => void;
+  onSkipFreshEyes: () => void;
+}) {
+  return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-amber-600/40 bg-slate-950/95 px-4 py-2 backdrop-blur">
       <div className="mx-auto flex max-w-lg items-center justify-between gap-2">
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={onToggle}
           className="text-xs font-semibold uppercase tracking-wide text-amber-400"
         >
           Dev tools {open ? "▾" : "▸"}
@@ -67,135 +206,41 @@ export function DevToolsPanel() {
             type="button"
             disabled={busy || !hasJob}
             className={btn}
-            onClick={() =>
-              run(async () => {
-                const job = requireJob(activeJob);
-                const r = await fillRequiredPhotos(job, masterFile);
-                await refreshPhotoTags();
-                await loadJob(job.id);
-                return `Filled ${r.filled} photo(s) (${r.skipped} already had)`;
-              })
-            }
+            onClick={onFillPhotos}
           >
             Fill required photos
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            className={btn}
-            onClick={() => {
-              prefillNewJobForm(DEMO_NEW_JOB);
-              setMessage("New job form filled");
-            }}
-          >
+          <button type="button" disabled={busy} className={btn} onClick={onFillNewJob}>
             Fill new job form
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            className={btn}
-            onClick={() =>
-              run(async () => {
-                const id = await seedDemoMaintenanceJob({ target: "intake" });
-                await loadJob(id);
-                setScreen("intake");
-                return "Maintenance demo at intake";
-              })
-            }
-          >
+          <button type="button" disabled={busy} className={btn} onClick={onSeedIntake}>
             Seed demo → intake
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            className={btn}
-            onClick={() =>
-              run(async () => {
-                const id = await seedDemoMaintenanceJob({ target: "checklist" });
-                await loadJob(id);
-                setScreen("checklist");
-                return "Maintenance demo on checklist";
-              })
-            }
-          >
+          <button type="button" disabled={busy} className={btn} onClick={onSeedChecklist}>
             Seed demo → checklist
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            className={btn}
-            onClick={() =>
-              run(async () => {
-                const id = await seedDemoMaintenanceJob({ target: "qc" });
-                await loadJob(id);
-                setScreen("qc");
-                return "Maintenance demo at QC (work QC passed)";
-              })
-            }
-          >
+          <button type="button" disabled={busy} className={btn} onClick={onSeedQc}>
             Seed demo → QC
           </button>
           <button
             type="button"
             disabled={busy || !hasJob}
             className={btn}
-            onClick={() =>
-              run(async () => {
-                const job = requireJob(activeJob);
-                const r = await completeAllWorkSteps(job);
-                await loadJob(job.id);
-                return (
-                  `Completed ${r.completed} step(s)` +
-                  (r.remaining ? ` · ${r.remaining} still blocked` : "")
-                );
-              })
-            }
+            onClick={onCompleteWork}
           >
             Complete all work steps
           </button>
-          <button
-            type="button"
-            disabled={busy || !hasJob}
-            className={btn}
-            onClick={() =>
-              run(async () => {
-                const r = await enterQc();
-                if (!r.ok) throw new Error(r.error);
-                return "QC screen ready";
-              })
-            }
-          >
+          <button type="button" disabled={busy || !hasJob} className={btn} onClick={onEnterQc}>
             Enter QC
           </button>
-          <button
-            type="button"
-            disabled={busy || !hasJob}
-            className={btn}
-            onClick={() =>
-              run(async () => {
-                const job = requireJob(activeJob);
-                await advanceQcPastFreshEyes(job);
-                await refreshPhotoTags();
-                await loadJob(job.id);
-                setScreen("qc");
-                return "Work QC + final photos + fresh-eyes skip";
-              })
-            }
-          >
+          <button type="button" disabled={busy || !hasJob} className={btn} onClick={onAdvanceQc}>
             QC: pass work + fill finals + skip pause
           </button>
           <button
             type="button"
             disabled={busy || !hasJob}
             className={btn}
-            onClick={() =>
-              run(async () => {
-                const job = requireJob(activeJob);
-                await skipFreshEyesPause(job);
-                await loadJob(job.id);
-                return "Fresh-eyes pause skipped";
-              })
-            }
+            onClick={onSkipFreshEyes}
           >
             Skip fresh-eyes pause
           </button>
