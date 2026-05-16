@@ -295,6 +295,7 @@ export function IntakeScreen({ job }: IntakeScreenProps) {
               tag={req.tag}
               label={req.label}
               required={req.required}
+              photoReady={intakePhotoTags.includes(req.tag)}
               onUploaded={() => void refreshPhotoTags()}
             />
           ))}

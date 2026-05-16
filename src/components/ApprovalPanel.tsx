@@ -15,7 +15,7 @@ interface ApprovalPanelProps {
 }
 
 export function ApprovalPanel({ job }: ApprovalPanelProps) {
-  const { grantApproval, declineApproval } = useJobStore();
+  const { grantApproval, declineApproval, intakePhotoTags } = useJobStore();
   const pending = getPendingApprovals(job);
   const [expandedKey, setExpandedKey] = useState<string | null>(
     pending[0]?.key ?? null,
@@ -45,7 +45,7 @@ export function ApprovalPanel({ job }: ApprovalPanelProps) {
 
   useEffect(() => {
     void refreshEvidence();
-  }, [refreshEvidence]);
+  }, [refreshEvidence, intakePhotoTags]);
 
   useEffect(() => {
     if (pending.length && !pending.some((p) => p.key === expandedKey)) {
@@ -194,6 +194,9 @@ export function ApprovalPanel({ job }: ApprovalPanelProps) {
                         tag={approvalEvidencePhotoTag(item.key)}
                         label="Evidence photo (signature / written OK)"
                         required
+                        photoReady={intakePhotoTags.includes(
+                          approvalEvidencePhotoTag(item.key),
+                        )}
                         onUploaded={() => void refreshEvidence()}
                       />
                       {!evidenceMap[item.key] && (

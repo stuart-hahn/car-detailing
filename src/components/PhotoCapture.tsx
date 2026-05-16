@@ -10,6 +10,8 @@ interface PhotoCaptureProps {
   tag: string;
   label: string;
   required?: boolean;
+  /** When true, re-load preview (e.g. dev tools filled this tag). */
+  photoReady?: boolean;
   onUploaded: () => void;
 }
 
@@ -18,6 +20,7 @@ export function PhotoCapture({
   tag,
   label,
   required,
+  photoReady,
   onUploaded,
 }: PhotoCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,17 +32,29 @@ export function PhotoCapture({
 
   useEffect(() => {
     let url: string | null = null;
+    let cancelled = false;
     void getJobPhotoUrl(jobId, tag).then((u) => {
+      if (cancelled) {
+        if (u) revokePhotoUrl(u);
+        return;
+      }
       if (u) {
         url = u;
         setPreview(u);
         setStatus("done");
+      } else if (!photoReady) {
+        setPreview((prev) => {
+          if (prev) revokePhotoUrl(prev);
+          return null;
+        });
+        setStatus("idle");
       }
     });
     return () => {
+      cancelled = true;
       if (url) revokePhotoUrl(url);
     };
-  }, [jobId, tag]);
+  }, [jobId, tag, photoReady]);
 
   async function handleFile(file: File) {
     setStatus("uploading");
