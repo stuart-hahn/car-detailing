@@ -40,7 +40,7 @@ Done means: <verifiable>
 
 ## Commits (recent)
 
-- `59600ef` fix locked upsell not blocking QC
+- `9e537c6` fix locked upsell not blocking QC
 - `2190ecf` QC screens (two-pass, rework, fresh-eyes)
 - `4f0831f` swipe-to-complete + undo
 - `fb39d4f` intake gates + refer-out
