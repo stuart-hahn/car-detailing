@@ -35,6 +35,6 @@
 - Intake: `corner_fl`, `damage_*`, `flag_*`, etc.  
 - Step: `step_{instance_id}`  
 
-## Export (planned)
+## Export
 
-`export_version: 1` — JSON/ZIP; import restores Dexie.
+`export_version: 1` — `src/lib/backup/` — JSON (metadata) or ZIP (`export.json` + `photos/*.jpg`). Import upserts Dexie by ID. Post-delivery backup prompt on History + QC complete (`src/lib/backup/prompt.ts`).

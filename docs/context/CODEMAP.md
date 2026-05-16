@@ -24,6 +24,7 @@
 | `src/lib/qc/freshEyes.ts` | Fresh-eyes pause timing |
 | `src/lib/slots.ts` | `SLOT_ORDER` canonical |
 | `src/lib/photos/storage.ts` | Compress, save, step photos |
+| `src/lib/backup/` | Export/import JSON & ZIP, backup prompt |
 | `src/lib/types.ts` | Shared TS types |
 
 ## Data files
@@ -46,6 +47,8 @@
 | `src/components/SwipeStepCard.tsx` | Swipe + undo UI |
 | `src/components/PhotoCapture.tsx` | Camera/file capture |
 | `src/components/ReferOutScreen.tsx` | Mold/bio close |
+| `src/components/BackupPanel.tsx` | Export/import UI |
+| `src/components/BackupPrompt.tsx` | Post-delivery backup nudge |
 
 ## Storage
 

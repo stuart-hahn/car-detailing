@@ -18,6 +18,8 @@ import {
 import { QC_REWORK_MAPPINGS } from "../lib/qc/rework";
 import type { JobRecord } from "../lib/db";
 import { useJobStore } from "../store/jobStore";
+import { shouldShowBackupPrompt } from "../lib/backup/prompt";
+import { BackupPrompt } from "./BackupPrompt";
 import { PhotoCapture } from "./PhotoCapture";
 
 interface QcScreenProps {
@@ -38,6 +40,8 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
     startDeliveryQc,
     completeDeliveryQc,
     setScreen,
+    backupPromptJobId,
+    clearBackupPrompt,
   } = useJobStore();
 
   const [selectedFails, setSelectedFails] = useState<string[]>([]);
@@ -406,15 +410,25 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
       )}
 
       {stage === "complete" && (
-        <div className="space-y-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-          <p className="font-medium text-emerald-200">QC complete</p>
-          <button
-            type="button"
-            onClick={() => setScreen("history")}
-            className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
-          >
-            View history
-          </button>
+        <div className="space-y-3">
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+            <p className="font-medium text-emerald-200">QC complete</p>
+            <button
+              type="button"
+              onClick={() => setScreen("history")}
+              className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
+            >
+              View history
+            </button>
+          </div>
+          {backupPromptJobId === job.id &&
+            shouldShowBackupPrompt(job.id) && (
+              <BackupPrompt
+                jobId={job.id}
+                customerName={job.customer_name}
+                onDismiss={clearBackupPrompt}
+              />
+            )}
         </div>
       )}
 

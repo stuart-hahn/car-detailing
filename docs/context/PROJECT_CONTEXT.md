@@ -25,7 +25,7 @@ master_steps.json + tier + upholstery + flags + pre_sold_addons + approvals
 
 - **Dexie v2:** `jobs`, `photos`, `settings`, `customers`
 - **Job FSM:** draft → intake_complete → active \| awaiting_approval \| blocked_* → completed; `rescheduled` = declined + reason
-- **No auth v1** — device-local; export/import planned
+- **No auth v1** — device-local; export/import JSON & ZIP (`export_version: 1`)
 
 ## UI screens
 

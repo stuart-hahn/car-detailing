@@ -3,6 +3,9 @@ import { ChecklistScreen } from "./components/ChecklistScreen";
 import { IntakeScreen } from "./components/IntakeScreen";
 import { QcScreen } from "./components/QcScreen";
 import { ReferOutScreen } from "./components/ReferOutScreen";
+import { BackupPanel } from "./components/BackupPanel";
+import { BackupPrompt } from "./components/BackupPrompt";
+import { shouldShowBackupPrompt } from "./lib/backup/prompt";
 import { getOrCreateSettings } from "./lib/db";
 import { useJobStore, type Screen } from "./store/jobStore";
 import type { TierId, UpholsteryType } from "./lib/types";
@@ -99,9 +102,7 @@ export default function App() {
         {screen === "delivery" && (
           <PlaceholderScreen title="Delivery" job={activeJob} />
         )}
-        {screen === "history" && (
-          <HistoryScreen onOpen={loadJob} />
-        )}
+        {screen === "history" && <HistoryScreen onOpen={loadJob} />}
       </main>
     </div>
   );
@@ -275,6 +276,7 @@ function PlaceholderScreen({
 }
 
 function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
+  const { backupPromptJobId, clearBackupPrompt } = useJobStore();
   const [jobs, setJobs] = useState<
     {
       id: string;
@@ -285,33 +287,54 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
     }[]
   >([]);
 
-  useEffect(() => {
+  const reload = () => {
     import("./lib/db").then(({ db }) => {
       db.jobs.orderBy("created_at").reverse().toArray().then(setJobs);
     });
+  };
+
+  useEffect(() => {
+    reload();
   }, []);
 
-  if (!jobs.length) {
-    return <p className="text-slate-400">No jobs yet.</p>;
-  }
+  const promptJob = jobs.find((j) => j.id === backupPromptJobId);
 
   return (
-    <ul className="space-y-2">
-      {jobs.map((j) => (
-        <li key={j.id}>
-          <button
-            type="button"
-            onClick={() => void onOpen(j.id)}
-            className="w-full rounded-xl border border-slate-800 px-4 py-3 text-left hover:bg-slate-900"
-          >
-            <p className="font-medium">{j.customer_name}</p>
-            <p className="text-xs text-slate-500">
-              {j.tier} · {j.status} ·{" "}
-              {new Date(j.created_at).toLocaleString()}
-            </p>
-          </button>
-        </li>
-      ))}
-    </ul>
+    <section className="space-y-4">
+      {promptJob && shouldShowBackupPrompt(promptJob.id) && (
+        <BackupPrompt
+          jobId={promptJob.id}
+          customerName={promptJob.customer_name}
+          onDismiss={clearBackupPrompt}
+        />
+      )}
+
+      <BackupPanel onExported={reload} />
+
+      {!jobs.length ? (
+        <p className="text-slate-400">No jobs yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {jobs.map((j) => (
+            <li key={j.id} className="space-y-2">
+              <button
+                type="button"
+                onClick={() => void onOpen(j.id)}
+                className="w-full rounded-xl border border-slate-800 px-4 py-3 text-left hover:bg-slate-900"
+              >
+                <p className="font-medium">{j.customer_name}</p>
+                <p className="text-xs text-slate-500">
+                  {j.tier} · {j.status} ·{" "}
+                  {new Date(j.created_at).toLocaleString()}
+                </p>
+              </button>
+              {j.status === "completed" && (
+                <BackupPanel jobId={j.id} compact onExported={reload} />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -13,6 +13,7 @@ import { isWorkChecklistComplete } from "../lib/qc/flow";
 import { getFreshEyesProgress } from "../lib/qc/freshEyes";
 import { evaluateFinalPhotoGate } from "../lib/qc/requirements";
 import { applyQcRework } from "../lib/qc/rework";
+import { shouldShowBackupPrompt } from "../lib/backup/prompt";
 import {
   deleteJobPhoto,
   hasJobPhoto,
@@ -79,7 +80,9 @@ interface JobStore {
   activeJob: JobRecord | null;
   intakePhotoTags: string[];
   loading: boolean;
+  backupPromptJobId: string | null;
   setScreen: (screen: Screen) => void;
+  clearBackupPrompt: () => void;
   loadJob: (id: string) => Promise<void>;
   refreshPhotoTags: () => Promise<void>;
   createJob: (input: {
@@ -147,8 +150,11 @@ export const useJobStore = create<JobStore>((set, get) => ({
   activeJob: null,
   intakePhotoTags: [],
   loading: false,
+  backupPromptJobId: null,
 
   setScreen: (screen) => set({ screen }),
+
+  clearBackupPrompt: () => set({ backupPromptJobId: null }),
 
   refreshPhotoTags: async () => {
     const id = get().activeJobId;
@@ -783,7 +789,11 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated, screen: "history" });
+    set({
+      activeJob: updated,
+      screen: "history",
+      backupPromptJobId: shouldShowBackupPrompt(job.id) ? job.id : null,
+    });
     return { ok: true };
   },
 }));
