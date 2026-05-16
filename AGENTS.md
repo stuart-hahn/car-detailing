@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `2dd2d09` feat: 24h job reopen window with reason and immutability
 - `9c29994` feat: UI updates
 - `e7750bd` chore: sync AGENTS.md commit log
 - `d756bc9` feat: Delivery screen — handoff steps, care sheet, delivery QC
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `64093e7` chore: sync AGENTS.md commit log
 - `6ce691d` chore: update AGENTS.md
 - `90a0045` feat: UI updates
-- `b03ebe1` chore: sync AGENTS.md commit log
