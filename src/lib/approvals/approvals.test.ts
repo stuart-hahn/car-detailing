@@ -8,6 +8,7 @@ import {
   buildApprovalRecord,
   getPendingApprovals,
   hasBlockingPendingApproval,
+  refreshWarnBanners,
   requiresEvidencePhoto,
   resolveJobStatusAfterApproval,
 } from "./index";
@@ -86,6 +87,27 @@ describe("getPendingApprovals", () => {
     });
     job.declined_approvals = ["addon_ozone_treatment"];
     expect(getPendingApprovals(job)).toHaveLength(0);
+  });
+
+  it("drops odor_3 approval banner after grant", () => {
+    const job = jobFromInput({
+      tier: "maintenance",
+      upholstery_type: "cloth",
+      flags: ["odor_3"],
+      pre_sold_addons: [],
+      approvals: [],
+      sop_version: masterFile.version,
+    });
+    expect(
+      refreshWarnBanners(job).some((b) => b.flag === "odor_3"),
+    ).toBe(true);
+    const approved = {
+      ...job,
+      approvals: ["addon_ozone_treatment", "odor_3"],
+    };
+    expect(refreshWarnBanners(approved).some((b) => b.flag === "odor_3")).toBe(
+      false,
+    );
   });
 
   it("returns empty when addon already approved", () => {

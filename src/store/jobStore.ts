@@ -6,6 +6,7 @@ import {
   buildApprovalRecord,
   cancelDeclinedApprovalSteps,
   getPendingApprovals,
+  refreshWarnBanners,
   requiresEvidencePhoto,
   resolveJobStatusAfterApproval,
 } from "../lib/approvals";
@@ -535,6 +536,10 @@ export const useJobStore = create<JobStore>((set, get) => ({
       approvals: newApprovals,
       approval_records: [...(job.approval_records ?? []), record],
       generated_steps: steps,
+      warn_banners: refreshWarnBanners({
+        ...job,
+        approvals: newApprovals,
+      }),
       audit_log: [
         ...job.audit_log,
         {
@@ -563,10 +568,17 @@ export const useJobStore = create<JobStore>((set, get) => ({
       job.generated_steps,
       item.templateIds,
     );
+    const declined_approvals = [
+      ...new Set([...(job.declined_approvals ?? []), item.key]),
+    ];
     const nextJob: JobRecord = {
       ...job,
       generated_steps: steps,
-      declined_approvals: [...new Set([...(job.declined_approvals ?? []), item.key])],
+      declined_approvals,
+      warn_banners: refreshWarnBanners({
+        ...job,
+        declined_approvals,
+      }),
       audit_log: [
         ...job.audit_log,
         {

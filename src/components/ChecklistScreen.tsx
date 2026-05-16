@@ -21,7 +21,11 @@ import {
 import type { JobRecord } from "../lib/db";
 import type { MasterStepsFile, StepInstance } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
-import { getPendingApprovals, hasBlockingPendingApproval } from "../lib/approvals";
+import {
+  getPendingApprovals,
+  hasBlockingPendingApproval,
+  refreshWarnBanners,
+} from "../lib/approvals";
 import { ApprovalPanel } from "./ApprovalPanel";
 import { PhotoCapture } from "./PhotoCapture";
 import { SwipeStepCard } from "./SwipeStepCard";
@@ -102,6 +106,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const completed = actionableSteps.filter((s) => s.status === "completed").length;
   const lockedUpsellCount = countLockedUpsellSteps(activeJob.generated_steps);
   const pendingApprovals = getPendingApprovals(activeJob);
+  const activeWarnBanners = refreshWarnBanners(activeJob);
   const blockingApproval = hasBlockingPendingApproval(activeJob);
   const reworkPending = hasPendingRework(activeJob.generated_steps);
   const qcReady = isWorkChecklistComplete(activeJob.generated_steps);
@@ -238,9 +243,9 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
         </p>
       )}
 
-      {job.warn_banners.length > 0 && (
+      {activeWarnBanners.length > 0 && (
         <div className="space-y-2">
-          {(job.warn_banners as { flag: string; message: string }[]).map((b) => (
+          {activeWarnBanners.map((b) => (
             <p
               key={b.flag}
               className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"

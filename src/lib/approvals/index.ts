@@ -1,12 +1,15 @@
 import addonsFile from "../../data/addons.json";
 import flagBehaviorFile from "../../data/flag_behavior.json";
+import master from "../../data/master_steps.json";
 import type { JobRecord } from "../db";
-import { inferAddonForFlag } from "../generator";
+import { generateChecklist, inferAddonForFlag } from "../generator";
 import type {
   AddonsFile,
   FlagBehavior,
   FlagBehaviorFile,
+  MasterStepsFile,
   TierId,
+  WarnBanner,
 } from "../types";
 import type { CustomerApprovalRecord, PendingApproval } from "./types";
 
@@ -147,6 +150,32 @@ export function hasBlockingPendingApproval(job: JobRecord): boolean {
 
 export function approvalEvidencePhotoTag(key: string): string {
   return `approval_${key.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+}
+
+const masterFile = master as MasterStepsFile;
+
+/** Recompute upsell banners from current approvals / declines (stored banners go stale). */
+export function refreshWarnBanners(job: JobRecord): WarnBanner[] {
+  const result = generateChecklist(
+    {
+      tier: job.tier,
+      upholstery_type: job.upholstery_type,
+      flags: job.flags,
+      pre_sold_addons: job.pre_sold_addons,
+      approvals: job.approvals,
+      sop_version: job.sop_version,
+      material_zones: job.intake?.material_zones,
+    },
+    { master: masterFile },
+  );
+
+  const declined = new Set(job.declined_approvals ?? []);
+  return result.warn_banners.filter((b) => {
+    if (declined.has(b.flag)) return false;
+    const addon = inferAddonForFlag(b.flag);
+    if (addon && declined.has(addon)) return false;
+    return true;
+  });
 }
 
 export function requiresEvidencePhoto(
