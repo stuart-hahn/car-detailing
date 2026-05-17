@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type TouchEvent } from "react";
 import type { ChecklistCompleteMode } from "../hooks/useChecklistCompleteMode";
 import {
   formatRemainingMs,
@@ -21,6 +21,14 @@ interface SwipeStepCardProps {
   photoRequired?: boolean;
   hasPhoto?: boolean;
   completeMode?: ChecklistCompleteMode;
+  /** Compact row for full-list navigation; interaction only when false. */
+  compact?: boolean;
+  /** Highlight current step in full checklist (scroll target). */
+  highlighted?: boolean;
+  /** Show parallel wait-time hints (focus / active step only). */
+  showParallelHints?: boolean;
+  /** DOM id for scroll-anchor (full checklist). */
+  listId?: string;
   onComplete: () => void;
   onUndo: (reason?: string) => void;
   onCapturePhoto?: () => void;
@@ -38,13 +46,17 @@ export function SwipeStepCard({
   photoRequired,
   hasPhoto,
   completeMode = "swipe",
+  compact = false,
+  highlighted = false,
+  showParallelHints = false,
+  listId,
   onComplete,
   onUndo,
   onCapturePhoto,
 }: SwipeStepCardProps) {
   const [offset, setOffset] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [hintsOpen, setHintsOpen] = useState(false);
+  const [hintsOpen, setHintsOpen] = useState(showParallelHints);
   const [undoReason, setUndoReason] = useState("");
   const [showUndoForm, setShowUndoForm] = useState(false);
   const startX = useRef(0);
@@ -54,6 +66,20 @@ export function SwipeStepCard({
   const freeUndoMs = isCompleted ? remainingFreeUndoMs(step) : null;
   const useSwipe = completeMode === "swipe";
   const photoBlocksComplete = Boolean(photoRequired && !hasPhoto);
+
+  useEffect(() => {
+    if (showParallelHints) setHintsOpen(true);
+  }, [showParallelHints, step.instance_id]);
+
+  const borderClass = highlighted
+    ? "border-sky-500/50 ring-2 ring-sky-500/20"
+    : isCompleted
+      ? "border-emerald-500/30 bg-emerald-500/5"
+      : isRework
+        ? "border-amber-500/40 bg-amber-500/10"
+        : locked
+          ? "border-slate-800 bg-slate-900/30 opacity-60"
+          : "border-slate-700 bg-slate-900/50";
 
   function onTouchStart(e: TouchEvent) {
     if (locked || isCompleted) return;
@@ -96,17 +122,12 @@ export function SwipeStepCard({
 
   return (
     <li
-      className={`overflow-hidden rounded-xl border ${
-        isCompleted
-          ? "border-emerald-500/30 bg-emerald-500/5"
-          : isRework
-            ? "border-amber-500/40 bg-amber-500/10"
-            : locked
-              ? "border-slate-800 bg-slate-900/30 opacity-60"
-              : "border-slate-700 bg-slate-900/50"
+      id={listId}
+      className={`overflow-hidden rounded-xl border ${borderClass} ${
+        compact ? "bg-slate-900/40" : ""
       }`}
     >
-      <div className="px-4 py-3">
+      <div className={compact ? "px-3 py-2" : "px-4 py-3"}>
         <div className="flex items-start gap-3">
           <span className="mt-0.5 text-xs tabular-nums text-slate-500">
             {index + 1}
@@ -115,7 +136,7 @@ export function SwipeStepCard({
             <p className="font-medium leading-snug">
               {template?.name ?? step.template_id}
             </p>
-            {template?.instructions && (
+            {!compact && template?.instructions && (
               <p className="mt-1 line-clamp-2 text-xs text-slate-400">
                 {template.instructions}
               </p>
@@ -134,7 +155,10 @@ export function SwipeStepCard({
           {isCompleted && <span className="text-sm text-emerald-400">✓</span>}
         </div>
 
-        {parallelHints.length > 0 && !locked && !isCompleted && (
+        {showParallelHints &&
+          parallelHints.length > 0 &&
+          !locked &&
+          !isCompleted && (
           <div className="mt-2">
             <button
               type="button"
@@ -153,7 +177,7 @@ export function SwipeStepCard({
           </div>
         )}
 
-        {photoRequired && !isCompleted && !locked && (
+        {!compact && photoRequired && !isCompleted && !locked && (
           <div className="mt-2">
             <button
               type="button"
@@ -169,7 +193,7 @@ export function SwipeStepCard({
           <p className="mt-2 text-xs text-amber-300">{dependentWarning}</p>
         )}
 
-        {!locked && !isCompleted && useSwipe && (
+        {!compact && !locked && !isCompleted && useSwipe && (
           <div
             className="relative mt-3 h-11 overflow-hidden rounded-lg bg-slate-800"
             onTouchStart={onTouchStart}
@@ -192,7 +216,7 @@ export function SwipeStepCard({
           </div>
         )}
 
-        {!locked && !isCompleted && !useSwipe && (
+        {!compact && !locked && !isCompleted && !useSwipe && (
           <label
             className={`mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2.5 ${
               photoBlocksComplete ? "cursor-not-allowed opacity-60" : ""

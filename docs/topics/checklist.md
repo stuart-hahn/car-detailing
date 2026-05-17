@@ -9,6 +9,13 @@
 3. Swipe right (120px) → `completeStep`  
 4. Undo per policy  
 
+## Field UI (PR3)
+
+- **Up next** focus card — full swipe/checkbox + parallel hints (`lib/checklist/focus.ts` → `findUpNextStep`)  
+- **Done** — collapsed section; expand for undo  
+- **Show full checklist** — scrolls to `#checklist-step-current` in compact list  
+- **Go to QC** — sticky footer above bottom nav when `isWorkChecklistComplete`  
+
 ## Locks (cannot complete)
 
 - !intake_complete / !work_started  

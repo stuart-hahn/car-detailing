@@ -22,7 +22,7 @@
 
 | Done | Next |
 |------|------|
-| Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes, 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI, PR1 — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav, PR2 — CSS vars, field palette, theme wired, Settings + Export/Import | PR3 |
+| 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI, PR1 — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav, PR2 — CSS vars, field palette, theme wired, Settings + Export/Import, PR3 — Checklist D — up-next focus card, collapsed done, scroll-anchor, hints on focus only, sticky “Go to QC” when `qcReady` | PR4 |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 
@@ -49,6 +49,7 @@ Finish: npm run agent:finish
 
 ## Commits (recent)
 
+- `9762f96` chore: sync AGENTS.md
 - `638eb08` docs: update progressive discovery
 - `40caa07` chore: update AGENTS.md
 - `0db9990` chore: sync AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish
 - `e2ac655` feat: theme tokens, field palette, Settings (PR2)
 - `8727d2e` feat: job shell — 3-tab nav, phase router, one-job gate (PR1)
 - `bc3f990` feat: QC screen updates
-- `30e4062` chore: sync AGENTS.md commit log

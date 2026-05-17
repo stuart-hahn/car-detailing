@@ -17,12 +17,13 @@
 - [x] 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI
 - [x] PR1 — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav
 - [x] PR2 — CSS vars, field palette, theme wired, Settings + Export/Import
+- [x] PR3 — Checklist D — up-next focus card, collapsed done, scroll-anchor, hints on focus only, sticky “Go to QC” when `qcReady`
 
 ## Next (priority) — UI/UX: job-centric shell (C) → field usability (A)
 
 Strategy: surface FSM in navigation; field mode for driveway use. Spec polish (repeat customers, storage estimate) deferred until this ships.
 
-1. **PR3** — Checklist D — up-next focus card, collapsed done, scroll-anchor, hints on focus only, sticky “Go to QC” when `qcReady`
+1. **PR4** — QC C — stage panel, collapsed prior outcomes, display-only sub-strip, footer CTA per stage, fresh-eyes timer in panel, rework hatch
 
 | PR | Ships | Gate |
 |----|--------|------|

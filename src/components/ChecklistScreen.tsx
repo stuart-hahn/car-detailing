@@ -6,6 +6,7 @@ import {
   getStepTemplate,
   getUnmetDependencies,
 } from "../lib/checklist/dependencies";
+import { partitionChecklistSteps } from "../lib/checklist/focus";
 import { evaluateUndoPolicy } from "../lib/checklist/undo";
 import {
   countLockedUpsellSteps,
@@ -28,6 +29,7 @@ import { PhotoCapture } from "./PhotoCapture";
 import { SwipeStepCard } from "./SwipeStepCard";
 
 const masterFile = master as MasterStepsFile;
+const CHECKLIST_SCROLL_ANCHOR_ID = "checklist-step-current";
 
 interface ChecklistScreenProps {
   job: JobRecord | null;
@@ -46,6 +48,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const [photoStepId, setPhotoStepId] = useState<string | null>(null);
   const [stepPhotoMap, setStepPhotoMap] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [doneExpanded, setDoneExpanded] = useState(false);
   const [, tick] = useState(0);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completeMode = useChecklistCompleteMode();
@@ -76,6 +79,16 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const steps = useMemo(
     () => job?.generated_steps.filter((s) => s.slot !== "intake") ?? [],
     [job?.generated_steps],
+  );
+
+  const { workSteps, doneSteps, upNext } = useMemo(
+    () => partitionChecklistSteps(job?.generated_steps ?? []),
+    [job?.generated_steps],
+  );
+
+  const pendingListSteps = useMemo(
+    () => workSteps.filter((s) => s.status !== "completed"),
+    [workSteps],
   );
 
   const approvalInputs = useMemo(() => {
@@ -109,6 +122,12 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
     [job, approvalInputs],
   );
 
+  const scrollToUpNext = useCallback(() => {
+    document
+      .getElementById(CHECKLIST_SCROLL_ANCHOR_ID)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   if (!job) {
     return <p className="text-slate-400">No active job. Create one first.</p>;
   }
@@ -137,6 +156,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
   const blockingApproval = pendingApprovals.some((p) => p.blocking);
   const reworkPending = hasPendingRework(activeJob.generated_steps);
   const qcReady = isWorkChecklistComplete(activeJob.generated_steps);
+  const showStickyQc = qcReady && workStarted;
 
   function lockState(step: StepInstance): { locked: boolean; reason?: string } {
     if (!wheelsUnlocked) {
@@ -184,12 +204,59 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
     else await refreshStepPhotos();
   }
 
+  function stepIndex(step: StepInstance): number {
+    return steps.findIndex((s) => s.instance_id === step.instance_id);
+  }
+
+  function renderStepCard(
+    step: StepInstance,
+    opts: {
+      compact?: boolean;
+      highlighted?: boolean;
+      showParallelHints?: boolean;
+    } = {},
+  ) {
+    const template = getStepTemplate(masterFile, step.template_id);
+    const { locked, reason } = lockState(step);
+    const undoPolicy =
+      step.status === "completed" ? evaluateUndoPolicy(activeJob, step) : null;
+    const isCurrent = upNext?.instance_id === step.instance_id;
+
+    return (
+      <SwipeStepCard
+        key={step.instance_id}
+        step={step}
+        index={stepIndex(step)}
+        template={template}
+        locked={locked}
+        lockReason={reason}
+        undoPolicy={undoPolicy}
+        dependentWarning={
+          step.status === "completed" ? dependentWarning(step) : undefined
+        }
+        parallelHints={template?.parallel_hints}
+        photoRequired={template?.photo_required}
+        hasPhoto={stepPhotoMap[step.instance_id]}
+        completeMode={completeMode}
+        compact={opts.compact}
+        highlighted={opts.highlighted}
+        showParallelHints={opts.showParallelHints}
+        listId={
+          isCurrent && opts.compact ? CHECKLIST_SCROLL_ANCHOR_ID : undefined
+        }
+        onComplete={() => void handleComplete(step.instance_id)}
+        onUndo={(r) => void handleUndo(step.instance_id, r)}
+        onCapturePhoto={() => setPhotoStepId(step.instance_id)}
+      />
+    );
+  }
+
   const photoStep = photoStepId
     ? steps.find((s) => s.instance_id === photoStepId)
     : null;
 
   return (
-    <section className="space-y-4 pb-8">
+    <section className={`space-y-4 ${showStickyQc ? "pb-28" : "pb-8"}`}>
       <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
         <p className="text-sm text-slate-400">
           {job.customer_name} · {job.vehicle_ymmt}
@@ -251,18 +318,6 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
             Rework required — complete flagged steps, then return to QC.
           </p>
         )}
-        {qcReady && workStarted && (
-          <button
-            type="button"
-            onClick={() => {
-              if (!activeJob.qc) void enterQc();
-              else setJobPhaseScreen("qc");
-            }}
-            className="mt-3 w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white"
-          >
-            {reworkPending ? "QC (after rework)" : "Continue to QC"}
-          </button>
-        )}
       </div>
 
       <ApprovalPanel job={activeJob} />
@@ -310,38 +365,85 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
         </div>
       )}
 
-      <ol className="space-y-2">
-        {steps.map((step, index) => {
-          const template = getStepTemplate(masterFile, step.template_id);
-          const { locked, reason } = lockState(step);
-          const undoPolicy =
-            step.status === "completed"
-              ? evaluateUndoPolicy(job, step)
-              : null;
+      <div className="space-y-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          Up next
+        </p>
+        {upNext ? (
+          renderStepCard(upNext, { showParallelHints: true })
+        ) : qcReady && workStarted ? (
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            All work steps complete. Continue to QC when ready.
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">
+            {workStarted
+              ? "No steps available — check approvals or intake."
+              : "Start work to unlock the checklist."}
+          </p>
+        )}
+      </div>
 
-          return (
-            <SwipeStepCard
-              key={step.instance_id}
-              step={step}
-              index={index}
-              template={template}
-              locked={locked}
-              lockReason={reason}
-              undoPolicy={undoPolicy}
-              dependentWarning={
-                step.status === "completed" ? dependentWarning(step) : undefined
-              }
-              parallelHints={template?.parallel_hints}
-              photoRequired={template?.photo_required}
-              hasPhoto={stepPhotoMap[step.instance_id]}
-              completeMode={completeMode}
-              onComplete={() => void handleComplete(step.instance_id)}
-              onUndo={(r) => void handleUndo(step.instance_id, r)}
-              onCapturePhoto={() => setPhotoStepId(step.instance_id)}
-            />
-          );
-        })}
-      </ol>
+      {doneSteps.length > 0 && (
+        <div className="rounded-xl border border-slate-800 bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => setDoneExpanded((o) => !o)}
+            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm"
+            aria-expanded={doneExpanded}
+          >
+            <span className="font-medium text-slate-300">
+              {doneSteps.length} step{doneSteps.length === 1 ? "" : "s"} done
+            </span>
+            <span className="text-slate-500">{doneExpanded ? "▲" : "▼"}</span>
+          </button>
+          {doneExpanded && (
+            <ol className="space-y-2 border-t border-slate-800 px-2 pb-2 pt-2">
+              {doneSteps.map((step) => renderStepCard(step, { compact: true }))}
+            </ol>
+          )}
+        </div>
+      )}
+
+      {pendingListSteps.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={scrollToUpNext}
+            disabled={!upNext}
+            className="w-full rounded-lg border border-slate-700 bg-slate-900/50 py-2.5 text-sm font-medium text-slate-300 disabled:opacity-40"
+          >
+            Show full checklist
+          </button>
+          <ol id="checklist-full" className="space-y-2 scroll-mt-24">
+            {pendingListSteps.map((step) =>
+              renderStepCard(step, {
+                compact: true,
+                highlighted: upNext?.instance_id === step.instance_id,
+              }),
+            )}
+          </ol>
+        </div>
+      )}
+
+      {showStickyQc && (
+        <div
+          className="fixed inset-x-0 bottom-14 z-30 mx-auto max-w-lg px-4"
+          role="region"
+          aria-label="QC ready"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              if (!activeJob.qc) void enterQc();
+              else setJobPhaseScreen("qc");
+            }}
+            className="min-h-12 w-full rounded-xl bg-emerald-600 py-3 text-base font-semibold text-white shadow-lg"
+          >
+            {reworkPending ? "Go to QC (after rework)" : "Go to QC"}
+          </button>
+        </div>
+      )}
     </section>
   );
 }
