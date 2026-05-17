@@ -20,6 +20,9 @@
 
 Strategy: surface FSM in navigation; field mode for driveway use. Spec polish (repeat customers, storage estimate) deferred until this ships.
 
+1. **PR1** — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav
+2. **PR2** — CSS vars, field palette, theme wired, Settings + Export/Import
+
 | PR | Ships | Gate |
 |----|--------|------|
 | **PR1** | Job shell; bottom nav (Active Job / History / Settings); phase router; header + `☀ Field (light)` pill (wired, palette in PR2); launch A+D; one-job gate; stale-draft banner; kill 7-tab nav; refer-out = full screen, macro stepper Intake in warn/error | App navigable |
