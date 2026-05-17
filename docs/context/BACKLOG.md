@@ -22,7 +22,7 @@
 
 ## Deferred (Phase 2+)
 
-Auth, cloud sync, SMS approval links, CRM, quoting AI, correction/ceramic sold work.
+Auth, cloud sync, SMS approval links, CRM, quoting AI.
 
 ## Verify before PR
 
