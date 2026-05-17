@@ -16,13 +16,31 @@
 - [x] Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes
 - [x] 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI
 
-## Next (priority)
+## Next (priority) — UI/UX: job-centric shell (C) → field usability (A)
 
-1. _(pick from deferred or polish — e.g. history filters, storage estimate in history)_
+Strategy: surface FSM in navigation; field mode for driveway use. Spec polish (repeat customers, storage estimate) deferred until this ships.
 
-## Deferred (Phase 2+)
+| PR | Ships | Gate |
+|----|--------|------|
+| **PR1** | Job shell; bottom nav (Active Job / History / Settings); phase router; header + `☀ Field (light)` pill (wired, palette in PR2); launch A+D; one-job gate; stale-draft banner; kill 7-tab nav; refer-out = full screen, macro stepper Intake in warn/error | App navigable |
+| **PR2** | CSS vars; field palette (B); `AppSettings.theme` wired; pill activates light field override; Settings (profile, products, theme, field default, Export/Import) | Foundation for A |
+| **PR3** | Checklist D — up-next focus card, collapsed done, “Show full checklist” scroll-anchor to current step, hints on focus only, sticky “Go to QC” when `qcReady` | Primary field screen |
+| **PR4** | QC C — stage panel, collapsed prior outcomes, display-only sub-strip, footer CTA per stage, fresh-eyes timer in panel, rework hatch `↩ Return to checklist — {n} step(s) flagged` | Full driveway loop |
+| **PR5** | History read-only detail sheet (tab-stay); C+D tap rules; reopen via explicit CTA | Admin path |
+| **PR6** | Intake / Delivery / New Job shell fit; remove “Phase 1” dev copy | Consistency |
 
-Auth, cloud sync, SMS approval links, CRM, quoting AI.
+### Locked rules (implement against these)
+
+- **Navigation:** One contextual screen per phase; macro stepper display-only (Intake → Work → QC → Delivery). QC sub-strip: Photos → Review → Fresh Eyes → Delivery QC → Done (forward-only). Back nav = text escape hatches only (no stepper taps).
+- **Launch:** Auto-resume non-terminal jobs to correct phase. Do **not** auto-resume completed jobs; show “Reopen [Customer]?” if `canReopenJob`. One in-flight job; New Job / switch prompts discard (draft-only → silent delete; real work → `declined` + reason).
+- **History:** Immutable completed → read-only sheet in History, `activeJobId` untouched. Reopen / in-flight taps → D-gate. Stay on History tab unless job becomes active.
+- **Field mode (B):** Pill `☀ Field (light)` in header (44px min). Field on → force light palette (`#F8F9FA` bg, `#111827` text, `#059669` CTA, etc.). Field off → honor theme (system/light/dark).
+
+## Deferred
+
+**UI (after PR6):** Stepper read-only tap (B evolution), expanded checklist preference, product drag-reorder, history filters, storage estimate in history.
+
+**Phase 2+:** Auth, cloud sync, SMS approval links, CRM, quoting AI, repeat-customer UI (Decision #29 — schema exists).
 
 ## Verify before PR
 
