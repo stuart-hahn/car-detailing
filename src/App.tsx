@@ -162,7 +162,6 @@ function NewJobScreen({
       ...form,
       vin: form.vin.trim() || undefined,
     });
-    closeNewJob();
     setSubmitting(false);
   }
 

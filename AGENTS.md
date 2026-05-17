@@ -49,6 +49,7 @@ Finish: npm run agent:finish
 
 ## Commits (recent)
 
+- `d87d4dd` docs: update backlog
 - `9762f96` chore: sync AGENTS.md
 - `638eb08` docs: update progressive discovery
 - `40caa07` chore: update AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish
 - `535e51c` chore: update AGENTS.md
 - `e2ac655` feat: theme tokens, field palette, Settings (PR2)
 - `8727d2e` feat: job shell — 3-tab nav, phase router, one-job gate (PR1)
-- `bc3f990` feat: QC screen updates

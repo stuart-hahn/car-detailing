@@ -24,38 +24,40 @@ export function ActiveJobView({
   newJobForm,
   activeHub,
 }: ActiveJobViewProps) {
+  const { activeJob } = useJobStore();
+
+  if (showNewJob) return <>{newJobForm}</>;
+  if (!activeJob) return <>{activeHub}</>;
+
+  return <ActiveJobPhase job={activeJob} />;
+}
+
+/** Mounted only when `activeJob` is set — keeps hooks stable across hub ↔ job transitions. */
+function ActiveJobPhase({ job }: { job: JobRecord }) {
   const {
-    activeJob,
     jobPhaseScreen,
     intakePhotoTags,
     setJobPhaseScreen,
     discardDraftJob,
   } = useJobStore();
 
-  if (showNewJob) return <>{newJobForm}</>;
-
-  if (!activeJob) return <>{activeHub}</>;
-
   const showStepper = jobPhaseScreen !== "refer_out";
-
-  const intakeTone = useIntakeStepperTone(activeJob, intakePhotoTags);
+  const intakeTone = useIntakeStepperTone(job, intakePhotoTags);
 
   return (
     <div className="space-y-4">
-      {activeJob && (
-        <StaleDraftBanner
-          job={activeJob}
-          onResume={() => setJobPhaseScreen("intake")}
-          onDiscard={() => void discardDraftJob(activeJob.id)}
-        />
-      )}
+      <StaleDraftBanner
+        job={job}
+        onResume={() => setJobPhaseScreen("intake")}
+        onDiscard={() => void discardDraftJob(job.id)}
+      />
 
       {showStepper && (
-        <MacroStepper job={activeJob} intakeTone={intakeTone} />
+        <MacroStepper job={job} intakeTone={intakeTone} />
       )}
 
       <PhaseBody
-        job={activeJob}
+        job={job}
         phase={jobPhaseScreen}
         onGoIntake={() => setJobPhaseScreen("intake")}
         onGoChecklist={() => setJobPhaseScreen("checklist")}
