@@ -10,7 +10,7 @@
 |---------|------|--------|
 | Every `git commit` | pre-commit hook → `npm run agent:sync` | `AGENTS.md` commits + Done/Next table (from [BACKLOG.md](BACKLOG.md)) |
 | Cursor agent session ends | `.cursor/hooks/agent-stop.sh` | sync + commit if dirty (skip: touch `.cursor/no-auto-commit`) |
-| Agent end-of-task (recommended) | `npm run agent:finish -- -m "…"` | verify + sync + commit |
+| Agent end-of-task (recommended) | `npm run agent:finish` | verify + sync + auto-commit |
 
 `AGENTS.md` **Done vs next** is derived from BACKLOG — edit BACKLOG first, then run sync.
 
@@ -44,7 +44,7 @@ Keep each topic **~40–80 lines**: flow diagram, key paths, done-means, pointer
 1. Read AGENTS.md → PROJECT_CONTEXT.md → one INDEX topic
 2. Implement + `npm test && npm run build`
 3. Update BACKLOG (+ topic / CODEMAP / PROJECT_CONTEXT if needed)
-4. `npm run agent:finish -- -m "feat: …"` (or let stop-hook commit for small sessions)
+4. `npm run agent:finish` (message inferred from changed paths; `-m` to override)
 5. Confirm `npm run agent:check` passes (INDEX links valid)
 
 ## Commands
@@ -53,8 +53,9 @@ Keep each topic **~40–80 lines**: flow diagram, key paths, done-means, pointer
 npm run hooks:install   # once per clone — enables pre-commit sync
 npm run agent:sync      # refresh AGENTS.md only
 npm run agent:check     # validate INDEX.md links
-npm run agent:commit -- -m "message"
-npm run agent:finish -- -m "message"   # test + build + commit
+npm run agent:commit    # auto message from changed paths
+npm run agent:finish    # test + build + auto-commit
+# optional override: npm run agent:finish -- -m "feat: custom"
 ```
 
 ## Opt out of auto-commit on agent stop

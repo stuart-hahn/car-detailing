@@ -3,6 +3,7 @@ import {
   buildDoneNextRow,
   formatRecentCommits,
   parseBacklog,
+  suggestCommitMessage,
 } from "./agent-sync.mjs";
 
 describe("agent-sync", () => {
@@ -37,5 +38,18 @@ describe("agent-sync", () => {
     });
     expect(row).toContain("b, c, d, e");
     expect(row).toContain("Export, Steps");
+  });
+
+  it("suggests commit messages from changed paths", () => {
+    expect(suggestCommitMessage(["AGENTS.md"])).toBe("chore: sync AGENTS.md");
+    expect(suggestCommitMessage(["src/lib/theme/tokens.ts"])).toBe(
+      "feat: theme tokens and field palette",
+    );
+    expect(suggestCommitMessage(["docs/context/BACKLOG.md", "AGENTS.md"])).toBe(
+      "docs: update backlog",
+    );
+    expect(suggestCommitMessage(["src/components/ChecklistScreen.tsx"])).toBe(
+      "feat: checklist screen updates",
+    );
   });
 });

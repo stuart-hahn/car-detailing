@@ -19,7 +19,7 @@ Verify: `npm test && npm run build`
 # Session end
 
 - Update `docs/context/BACKLOG.md` when shipping work.
-- Run `npm run agent:finish -- -m "…"` before handing off (syncs AGENTS.md, commits).
+- Run `npm run agent:finish` before handing off (syncs AGENTS.md, auto-commit message).
 - If you add screens, lib modules, or flows: update `PROJECT_CONTEXT.md`, `CODEMAP.md`, and the relevant `docs/topics/*.md` — see `docs/context/DISCOVERY_MAINTENANCE.md`.
 
 # Progressive discovery

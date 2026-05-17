@@ -29,7 +29,7 @@ Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 ## Session end (required)
 
 1. Update [BACKLOG.md](docs/context/BACKLOG.md) (+ topic/CODEMAP if you changed architecture).
-2. Run `npm run agent:finish -- -m "your message"` (test + build + sync AGENTS + commit).
+2. Run `npm run agent:finish` (test + build + sync AGENTS + auto-commit). Optional: `-m "override"`.
 3. Read [docs/context/DISCOVERY_MAINTENANCE.md](docs/context/DISCOVERY_MAINTENANCE.md) when unsure what to edit.
 
 **Auto:** pre-commit refreshes this file from BACKLOG + git log; Cursor `stop` hook commits dirty work unless `.cursor/no-auto-commit` exists.
@@ -44,11 +44,12 @@ Scope in: <paths>
 Scope out: PHASE1_SPEC unless spec conflict
 Verify: npm test && npm run build
 Done means: <verifiable>
-Finish: npm run agent:finish -- -m "<message>"
+Finish: npm run agent:finish
 ```
 
 ## Commits (recent)
 
+- `40caa07` chore: update AGENTS.md
 - `0db9990` chore: sync AGENTS.md
 - `535e51c` chore: update AGENTS.md
 - `e2ac655` feat: theme tokens, field palette, Settings (PR2)
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `bc3f990` feat: QC screen updates
 - `30e4062` chore: sync AGENTS.md commit log
 - `2bc4c5c` docs: UI/UX shell backlog (PR1–PR6)
-- `e62705e` docs: update progressive discovery

@@ -113,26 +113,56 @@ export function syncAgents() {
   return { commits: commitLines.length, done: backlog.shipped.length, next: backlog.next.length };
 }
 
-export function suggestCommitMessage() {
-  const diff = git(["diff", "--name-only", "HEAD"], { allowFail: true })
-    || git(["diff", "--name-only", "--cached"], { allowFail: true })
-    || git(["diff", "--name-only"], { allowFail: true })
-    || "";
-  const files = diff.split("\n").filter(Boolean);
-  if (!files.length) return "chore: update project files";
+export function listChangedFiles() {
+  const seen = new Set();
+  const add = (text) => {
+    if (!text) return;
+    for (const f of text.split("\n").filter(Boolean)) seen.add(f);
+  };
+  add(git(["diff", "--name-only", "HEAD"], { allowFail: true }));
+  add(git(["diff", "--name-only", "--cached"], { allowFail: true }));
+  add(git(["diff", "--name-only"], { allowFail: true }));
+  add(git(["ls-files", "--others", "--exclude-standard"], { allowFail: true }));
+  return [...seen];
+}
+
+export function suggestCommitMessage(files = listChangedFiles()) {
+  if (!files.length) return "chore: sync AGENTS.md";
 
   const has = (re) => files.some((f) => re.test(f));
+  const every = (pred) => files.every(pred);
+
+  if (every((f) => f === "AGENTS.md")) return "chore: sync AGENTS.md";
+  if (has(/BACKLOG\.md/)) return "docs: update backlog";
+  if (every((f) => /^docs\//.test(f) || f === "AGENTS.md")) {
+    return "docs: update progressive discovery";
+  }
+  if (has(/src\/lib\/theme\//)) return "feat: theme tokens and field palette";
+  if (has(/src\/lib\/navigation\//) || has(/src\/components\/shell\//)) {
+    return "feat: job shell and navigation";
+  }
+  if (has(/SettingsScreen/)) return "feat: Settings screen";
   if (has(/^docs\//) && !has(/^src\//)) return "docs: update progressive discovery";
   if (has(/src\/lib\/qc\//)) return "fix: QC flow and gates";
   if (has(/src\/components\/QcScreen/)) return "feat: QC screen updates";
+  if (has(/ChecklistScreen/)) return "feat: checklist screen updates";
   if (has(/src\/lib\/intake\//)) return "feat: intake changes";
   if (has(/src\/lib\/generator\//)) return "feat: checklist generator changes";
+  if (has(/src\/lib\/backup\//)) return "feat: backup export/import";
   if (has(/src\/components\//)) return "feat: UI updates";
   if (has(/src\/store\//)) return "feat: job store updates";
   if (has(/\.test\./)) return "test: add or update tests";
   if (has(/scripts\//)) return "chore: agent tooling";
   const top = files[0].replace(/^src\//, "");
   return `chore: update ${top}`;
+}
+
+function resolveCommitMessage(args) {
+  if (args.message?.trim()) return args.message.trim();
+  if (process.env.AGENT_COMMIT_MESSAGE?.trim()) {
+    return process.env.AGENT_COMMIT_MESSAGE.trim();
+  }
+  return suggestCommitMessage();
 }
 
 export function discoveryCheck() {
@@ -196,10 +226,9 @@ function commitWithMessage(message) {
 }
 
 function parseArgs(argv) {
-  const out = { message: null, auto: false, skipVerify: false };
+  const out = { message: null, skipVerify: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "-m" || argv[i] === "--message") out.message = argv[++i];
-    else if (argv[i] === "--auto") out.auto = true;
     else if (argv[i] === "--skip-verify") out.skipVerify = true;
     else if (!argv[i].startsWith("-")) out.message = argv[i];
   }
@@ -226,14 +255,8 @@ function main() {
       process.exit(discoveryCheck());
       break;
     case "commit": {
-      const msg =
-        args.message ||
-        (args.auto ? suggestCommitMessage() : null) ||
-        process.env.AGENT_COMMIT_MESSAGE;
-      if (!msg) {
-        console.error("Usage: agent-sync.mjs commit -m \"message\"");
-        process.exit(1);
-      }
+      const msg = resolveCommitMessage(args);
+      console.log(`agent:commit — ${msg}`);
       commitWithMessage(msg);
       break;
     }
@@ -242,14 +265,8 @@ function main() {
         runTests();
         runBuild();
       }
-      const msg =
-        args.message ||
-        (args.auto ? suggestCommitMessage() : null) ||
-        process.env.AGENT_COMMIT_MESSAGE;
-      if (!msg) {
-        console.error("Usage: agent-sync.mjs finish -m \"message\"");
-        process.exit(1);
-      }
+      const msg = resolveCommitMessage(args);
+      console.log(`agent:finish — ${msg}`);
       commitWithMessage(msg);
       console.log("agent:finish — verify, sync, and commit complete");
       break;
