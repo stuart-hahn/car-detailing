@@ -49,11 +49,11 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `9fba2b0` feat: job shell — 3-tab nav, phase router, one-job gate (PR1)
+- `bc3f990` feat: QC screen updates
 - `30e4062` chore: sync AGENTS.md commit log
 - `2bc4c5c` docs: UI/UX shell backlog (PR1–PR6)
 - `e62705e` docs: update progressive discovery
 - `2d83cf9` chore: update AGENTS.md
 - `9518322` chore: update AGENTS.md
 - `548f9b8` chore: update AGENTS.md
-- `784f348` chore: update AGENTS.md
-- `e3596de` chore: update AGENTS.md
