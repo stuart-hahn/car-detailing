@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `2bc4c5c` docs: UI/UX shell backlog (PR1–PR6)
 - `e62705e` docs: update progressive discovery
 - `2d83cf9` chore: update AGENTS.md
 - `9518322` chore: update AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `784f348` chore: update AGENTS.md
 - `e3596de` chore: update AGENTS.md
 - `98db644` chore: update AGENTS.md
-- `445a7a9` chore: update AGENTS.md
