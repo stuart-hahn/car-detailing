@@ -49,6 +49,7 @@ Finish: npm run agent:finish
 
 ## Commits (recent)
 
+- `638eb08` docs: update progressive discovery
 - `40caa07` chore: update AGENTS.md
 - `0db9990` chore: sync AGENTS.md
 - `535e51c` chore: update AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish
 - `8727d2e` feat: job shell — 3-tab nav, phase router, one-job gate (PR1)
 - `bc3f990` feat: QC screen updates
 - `30e4062` chore: sync AGENTS.md commit log
-- `2bc4c5c` docs: UI/UX shell backlog (PR1–PR6)
