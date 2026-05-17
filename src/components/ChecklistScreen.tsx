@@ -41,7 +41,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
     undoStep,
     refreshPhotoTags,
     enterQc,
-    setScreen,
+    setJobPhaseScreen,
   } = useJobStore();
   const [photoStepId, setPhotoStepId] = useState<string | null>(null);
   const [stepPhotoMap, setStepPhotoMap] = useState<Record<string, boolean>>({});
@@ -256,7 +256,7 @@ export function ChecklistScreen({ job, onGoIntake }: ChecklistScreenProps) {
             type="button"
             onClick={() => {
               if (!activeJob.qc) void enterQc();
-              else setScreen("qc");
+              else setJobPhaseScreen("qc");
             }}
             className="mt-3 w-full rounded-lg bg-violet-600 py-2 text-sm font-medium text-white"
           >

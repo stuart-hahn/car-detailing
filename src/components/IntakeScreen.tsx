@@ -16,6 +16,7 @@ import type { JobRecord } from "../lib/db";
 import { hasHardBlockFlag } from "../lib/intake/flags";
 import type { MaterialTag, MaterialZone } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
+import { isDraftOnly } from "../lib/navigation/jobPhase";
 
 interface IntakeScreenProps {
   job: JobRecord;
@@ -27,7 +28,7 @@ export function IntakeScreen({ job }: IntakeScreenProps) {
     refreshPhotoTags,
     updateIntake,
     completeIntake,
-    setScreen,
+    discardDraftJob,
   } = useJobStore();
   const intake = job.intake!;
   const [errors, setErrors] = useState<string[]>([]);
@@ -360,15 +361,17 @@ export function IntakeScreen({ job }: IntakeScreenProps) {
         )}
       </fieldset>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-950/95 p-4">
+      <div className="fixed bottom-14 left-0 right-0 border-t border-slate-800 bg-slate-950/95 p-4">
         <div className="mx-auto flex max-w-lg gap-2">
-          <button
-            type="button"
-            onClick={() => setScreen("home")}
-            className="rounded-xl border border-slate-700 px-4 py-3 text-sm"
-          >
-            Cancel
-          </button>
+          {isDraftOnly(job) && (
+            <button
+              type="button"
+              onClick={() => void discardDraftJob(job.id)}
+              className="rounded-xl border border-slate-700 px-4 py-3 text-sm"
+            >
+              Discard draft
+            </button>
+          )}
           <button
             type="button"
             disabled={submitting}

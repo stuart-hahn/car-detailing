@@ -21,7 +21,7 @@ export function DevToolsPanel() {
     activeJob,
     loadJob,
     refreshPhotoTags,
-    setScreen,
+    setJobPhaseScreen,
     enterQc,
     prefillNewJobForm,
     resetAfterHistoryClear,
@@ -40,7 +40,7 @@ export function DevToolsPanel() {
     } catch (error) {
       logDevToolError(action, error, {
         jobId: activeJob?.id,
-        screen: useJobStore.getState().screen,
+        jobPhaseScreen: useJobStore.getState().jobPhaseScreen,
       });
       const text =
         error instanceof Error ? error.message : "Dev tool failed";
@@ -95,7 +95,7 @@ export function DevToolsPanel() {
         run("seedDemoMaintenanceJob:intake", async () => {
           const id = await seedDemoMaintenanceJob({ target: "intake" });
           await loadJob(id);
-          setScreen("intake");
+          setJobPhaseScreen("intake");
           return "Maintenance demo at intake";
         })
       }
@@ -103,7 +103,7 @@ export function DevToolsPanel() {
         run("seedDemoMaintenanceJob:checklist", async () => {
           const id = await seedDemoMaintenanceJob({ target: "checklist" });
           await loadJob(id);
-          setScreen("checklist");
+          setJobPhaseScreen("checklist");
           return "Maintenance demo on checklist";
         })
       }
@@ -111,7 +111,7 @@ export function DevToolsPanel() {
         run("seedDemoMaintenanceJob:qc", async () => {
           const id = await seedDemoMaintenanceJob({ target: "qc" });
           await loadJob(id);
-          setScreen("qc");
+          setJobPhaseScreen("qc");
           return "Maintenance demo at QC (work QC passed)";
         })
       }
@@ -139,7 +139,7 @@ export function DevToolsPanel() {
           await advanceQcPastFreshEyes(job);
           await refreshPhotoTags();
           await loadJob(job.id);
-          setScreen("qc");
+          setJobPhaseScreen("qc");
           return "Work QC + final photos + fresh-eyes skip";
         })
       }

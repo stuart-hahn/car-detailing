@@ -16,6 +16,7 @@ import {
 } from "../lib/jobs/reopen";
 import type { MasterStepsFile } from "../lib/types";
 import { useJobStore } from "../store/jobStore";
+import { useUiStore } from "../store/uiStore";
 import { BackupPrompt } from "./BackupPrompt";
 import { CareSheetPanel } from "./CareSheetPanel";
 
@@ -34,7 +35,6 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
     startDeliveryQc,
     completeDeliveryQc,
     reopenJob,
-    setScreen,
     backupPromptJobId,
     clearBackupPrompt,
   } = useJobStore();
@@ -177,7 +177,7 @@ export function DeliveryScreen({ job, onGoQc }: DeliveryScreenProps) {
 
         <button
           type="button"
-          onClick={() => setScreen("history")}
+          onClick={() => useUiStore.getState().setAppTab("history")}
           className="w-full rounded-xl border border-slate-700 py-3 text-slate-200"
         >
           Job history

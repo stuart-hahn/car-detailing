@@ -5,11 +5,6 @@ import {
   type FormEvent,
 } from "react";
 import { DEMO_NEW_JOB, type NewJobFormValues } from "./lib/dev/demoJob";
-import { ChecklistScreen } from "./components/ChecklistScreen";
-import { IntakeScreen } from "./components/IntakeScreen";
-import { QcScreen } from "./components/QcScreen";
-import { DeliveryScreen } from "./components/DeliveryScreen";
-import { ReferOutScreen } from "./components/ReferOutScreen";
 import { BackupPanel } from "./components/BackupPanel";
 import { BackupPrompt } from "./components/BackupPrompt";
 import { shouldShowBackupPrompt } from "./lib/backup/prompt";
@@ -19,9 +14,17 @@ import {
   isJobImmutable,
   msUntilReopenCloses,
 } from "./lib/jobs/reopen";
+import { isInFlightJob } from "./lib/navigation/jobPhase";
 import { DevToolsPanel } from "./components/DevToolsPanel";
-import { getOrCreateSettings, type JobRecord } from "./lib/db";
-import { useJobStore, type Screen } from "./store/jobStore";
+import { SettingsScreen } from "./components/SettingsScreen";
+import { ActiveJobHub, ActiveJobView } from "./components/shell/ActiveJobView";
+import { AppHeader } from "./components/shell/AppHeader";
+import { BottomNav } from "./components/shell/BottomNav";
+import { DiscardJobModal } from "./components/shell/DiscardJobModal";
+import { db, getOrCreateSettings, type JobRecord } from "./lib/db";
+import { isDraftOnly } from "./lib/navigation/jobPhase";
+import { useJobStore } from "./store/jobStore";
+import { useUiStore } from "./store/uiStore";
 import type { TierId, UpholsteryType } from "./lib/types";
 
 const TIERS: { id: TierId; label: string; default?: boolean }[] = [
@@ -30,32 +33,31 @@ const TIERS: { id: TierId; label: string; default?: boolean }[] = [
   { id: "showroom", label: "Showroom Reset" },
 ];
 
-const SCREENS: { id: Screen; label: string }[] = [
-  { id: "home", label: "Home" },
-  { id: "new_job", label: "New Job" },
-  { id: "intake", label: "Intake" },
-  { id: "checklist", label: "Checklist" },
-  { id: "qc", label: "QC" },
-  { id: "delivery", label: "Delivery" },
-  { id: "history", label: "History" },
-];
-
 export default function App() {
   const {
-    screen,
-    setScreen,
     activeJob,
     createJob,
-    loadJob,
+    bootstrapLaunch,
+    launchComplete,
+    discardPrompt,
+    confirmDiscard,
+    cancelDiscard,
     historyListKey,
+    requestSwitchJob,
   } = useJobStore();
+  const { appTab, showNewJob, fieldMode } = useUiStore();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     getOrCreateSettings().then(() => setReady(true));
   }, []);
 
-  if (!ready) {
+  useEffect(() => {
+    if (!ready) return;
+    void bootstrapLaunch();
+  }, [ready, bootstrapLaunch]);
+
+  if (!ready || !launchComplete) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-950 text-slate-100">
         Loading…
@@ -64,97 +66,44 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-dvh bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Detailing SOP
-            </p>
-            <h1 className="text-lg font-semibold">Phase 1</h1>
-          </div>
-          <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-400">
-            Offline
-          </span>
-        </div>
-        <nav className="mx-auto mt-3 flex max-w-lg gap-1 overflow-x-auto pb-1">
-          {SCREENS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setScreen(s.id)}
-              className={`shrink-0 rounded-lg px-3 py-2 text-sm ${
-                screen === s.id
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-400 hover:bg-slate-900"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </nav>
-      </header>
+    <div
+      className="min-h-dvh bg-slate-950 text-slate-100"
+      data-field-mode={fieldMode ? "true" : undefined}
+    >
+      <AppHeader activeJob={activeJob} />
 
       <main
-        className={`mx-auto max-w-lg px-4 py-6${import.meta.env.DEV ? " pb-36" : ""}`}
+        className={`mx-auto max-w-lg px-4 py-6 pb-24${import.meta.env.DEV ? " pb-36" : ""}`}
       >
-        {screen === "home" && <HomeScreen onNavigate={setScreen} />}
-        {screen === "new_job" && (
-          <NewJobScreen onCreate={createJob} />
-        )}
-        {screen === "intake" && activeJob && <IntakeScreen job={activeJob} />}
-        {screen === "refer_out" && activeJob && (
-          <ReferOutScreen job={activeJob} />
-        )}
-        {screen === "checklist" && (
-          <ChecklistScreen
-            job={activeJob}
-            onGoIntake={() => setScreen("intake")}
+        {appTab === "active" && (
+          <ActiveJobView
+            showNewJob={showNewJob}
+            newJobForm={<NewJobScreen onCreate={createJob} />}
+            activeHub={<ActiveJobHub />}
           />
         )}
-        {screen === "qc" && (
-          <QcScreen
-            job={activeJob}
-            onGoChecklist={() => setScreen("checklist")}
+        {appTab === "history" && (
+          <HistoryScreen
+            key={historyListKey}
+            onOpen={(id) => void requestSwitchJob(id)}
           />
         )}
-        {screen === "delivery" && (
-          <DeliveryScreen
-            job={activeJob}
-            onGoQc={() => setScreen("qc")}
-          />
-        )}
-        {screen === "history" && (
-          <HistoryScreen key={historyListKey} onOpen={loadJob} />
-        )}
+        {appTab === "settings" && <SettingsScreen />}
       </main>
+
+      <BottomNav />
+
+      {discardPrompt && (
+        <DiscardJobModal
+          customerName={discardPrompt.job.customer_name}
+          needsReason={!isDraftOnly(discardPrompt.job)}
+          onConfirm={(reason) => void confirmDiscard(reason)}
+          onCancel={cancelDiscard}
+        />
+      )}
+
       {import.meta.env.DEV && <DevToolsPanel />}
     </div>
-  );
-}
-
-function HomeScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
-  return (
-    <section className="space-y-4">
-      <p className="text-slate-400">
-        Offline-first checklist for solo mobile detailing. See{" "}
-        <code className="text-slate-300">PHASE1_SPEC.md</code> for locked decisions.
-      </p>
-      <button
-        type="button"
-        onClick={() => onNavigate("new_job")}
-        className="w-full rounded-xl bg-sky-600 px-4 py-4 text-lg font-medium text-white"
-      >
-        New Job
-      </button>
-      <button
-        type="button"
-        onClick={() => onNavigate("history")}
-        className="w-full rounded-xl border border-slate-700 px-4 py-3 text-slate-200"
-      >
-        Job History
-      </button>
-    </section>
   );
 }
 
@@ -186,6 +135,7 @@ function NewJobScreen({
   }) => Promise<string>;
 }) {
   const { newJobPrefill, clearNewJobPrefill } = useJobStore();
+  const { closeNewJob } = useUiStore();
   const [form, setForm] = useState<NewJobFormValues>(EMPTY_NEW_JOB);
   const [submitting, setSubmitting] = useState(false);
 
@@ -218,6 +168,7 @@ function NewJobScreen({
       ...form,
       vin: form.vin.trim() || undefined,
     });
+    closeNewJob();
     setSubmitting(false);
   }
 
@@ -230,6 +181,16 @@ function NewJobScreen({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xl font-semibold">New Job</h2>
+        <button
+          type="button"
+          onClick={closeNewJob}
+          className="text-sm text-slate-400 hover:text-slate-200"
+        >
+          Cancel
+        </button>
+      </div>
       {import.meta.env.DEV && (
         <button
           type="button"
@@ -344,14 +305,17 @@ function NewJobScreen({
   );
 }
 
-function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
+function HistoryScreen({
+  onOpen,
+}: {
+  onOpen: (id: string) => void;
+}) {
   const { backupPromptJobId, clearBackupPrompt } = useJobStore();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [viewJob, setViewJob] = useState<JobRecord | null>(null);
 
   const reload = () => {
-    import("./lib/db").then(({ db }) => {
-      db.jobs.orderBy("created_at").reverse().toArray().then(setJobs);
-    });
+    void db.jobs.orderBy("created_at").reverse().toArray().then(setJobs);
   };
 
   useEffect(() => {
@@ -360,8 +324,28 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
 
   const promptJob = jobs.find((j) => j.id === backupPromptJobId);
 
+  function handleJobTap(job: JobRecord) {
+    if (job.status === "completed" && isJobImmutable(job)) {
+      setViewJob(viewJob?.id === job.id ? null : job);
+      return;
+    }
+    if (isInFlightJob(job) || canReopenJob(job)) {
+      void onOpen(job.id);
+      setViewJob(null);
+      return;
+    }
+    setViewJob(viewJob?.id === job.id ? null : job);
+  }
+
   return (
     <section className="space-y-4">
+      <header>
+        <h2 className="text-xl font-semibold">History</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Completed jobs are read-only after 24 hours. In-progress jobs open on Active Job.
+        </p>
+      </header>
+
       {promptJob && shouldShowBackupPrompt(promptJob.id) && (
         <BackupPrompt
           jobId={promptJob.id}
@@ -369,8 +353,6 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
           onDismiss={clearBackupPrompt}
         />
       )}
-
-      <BackupPanel onExported={reload} />
 
       {!jobs.length ? (
         <p className="text-slate-400">No jobs yet.</p>
@@ -380,7 +362,7 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
             <li key={j.id} className="space-y-2">
               <button
                 type="button"
-                onClick={() => void onOpen(j.id)}
+                onClick={() => handleJobTap(j)}
                 className="w-full rounded-xl border border-slate-800 px-4 py-3 text-left hover:bg-slate-900"
               >
                 <p className="font-medium">{j.customer_name}</p>
@@ -393,11 +375,19 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
                     {canReopenJob(j)
                       ? `Editable ${formatReopenTimeLeft(msUntilReopenCloses(j) ?? 0)}`
                       : isJobImmutable(j)
-                        ? "Locked"
+                        ? "Locked — tap for summary"
                         : null}
                   </p>
                 )}
+                {isInFlightJob(j) && (
+                  <p className="mt-1 text-xs text-emerald-500/80">
+                    In progress — tap to continue
+                  </p>
+                )}
               </button>
+              {viewJob?.id === j.id && (
+                <HistoryJobSummary job={j} />
+              )}
               {j.status === "completed" && (
                 <BackupPanel jobId={j.id} compact onExported={reload} />
               )}
@@ -406,5 +396,17 @@ function HistoryScreen({ onOpen }: { onOpen: (id: string) => Promise<void> }) {
         </ul>
       )}
     </section>
+  );
+}
+
+function HistoryJobSummary({ job }: { job: JobRecord }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-sm text-slate-300">
+      <p>{job.vehicle_ymmt}</p>
+      <p className="mt-1 text-slate-500">{job.service_address}</p>
+      {job.care_sheet_content && (
+        <p className="mt-2 text-xs text-slate-500">Care sheet saved on job</p>
+      )}
+    </div>
   );
 }

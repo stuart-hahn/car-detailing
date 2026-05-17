@@ -22,7 +22,7 @@
 
 | Done | Next |
 |------|------|
-| Care sheet generator — tier-gated text, product picklist, copy/share; saved on job at delivery QC, Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`, Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes, 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI | PR1, PR2 |
+| Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`, Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes, 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI, PR1 — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav | PR2 |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 
@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `30e4062` chore: sync AGENTS.md commit log
 - `2bc4c5c` docs: UI/UX shell backlog (PR1–PR6)
 - `e62705e` docs: update progressive discovery
 - `2d83cf9` chore: update AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `548f9b8` chore: update AGENTS.md
 - `784f348` chore: update AGENTS.md
 - `e3596de` chore: update AGENTS.md
-- `98db644` chore: update AGENTS.md

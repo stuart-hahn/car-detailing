@@ -30,6 +30,18 @@ import {
   isJobImmutable,
 } from "../lib/jobs/reopen";
 import {
+  findReopenCandidate,
+  findResumableJob,
+} from "../lib/navigation/launch";
+import {
+  isDraftOnly,
+  isInFlightJob,
+  isTerminalJob,
+  resolveJobPhaseScreen,
+  type JobPhaseScreen,
+} from "../lib/navigation/jobPhase";
+import { useUiStore } from "./uiStore";
+import {
   deleteJobPhoto,
   hasJobPhoto,
   listJobPhotoTags,
@@ -54,15 +66,13 @@ import {
 
 const masterFile = master as MasterStepsFile;
 
-export type Screen =
-  | "home"
-  | "new_job"
-  | "intake"
-  | "refer_out"
-  | "checklist"
-  | "qc"
-  | "delivery"
-  | "history";
+export type { JobPhaseScreen };
+
+export interface DiscardPrompt {
+  job: JobRecord;
+  intent: "new_job" | "switch";
+  targetJobId?: string;
+}
 
 function defaultPrimaryGoal(tier: TierId): JobIntake["primary_goal"] {
   if (tier === "maintenance") return "maintenance";
@@ -92,23 +102,32 @@ function defaultIntake(
 }
 
 interface JobStore {
-  screen: Screen;
+  jobPhaseScreen: JobPhaseScreen;
   activeJobId: string | null;
   activeJob: JobRecord | null;
   intakePhotoTags: string[];
   loading: boolean;
+  launchComplete: boolean;
+  reopenCandidate: JobRecord | null;
+  discardPrompt: DiscardPrompt | null;
   backupPromptJobId: string | null;
   /** Bumped after dev clear so History remounts and reloads. */
   historyListKey: number;
   /** Dev: pending values for the New Job form (consumed on mount). */
   newJobPrefill: NewJobFormValues | null;
-  setScreen: (screen: Screen) => void;
+  setJobPhaseScreen: (screen: JobPhaseScreen) => void;
+  bootstrapLaunch: () => Promise<void>;
+  requestNewJob: () => Promise<void>;
+  requestSwitchJob: (targetJobId: string) => Promise<void>;
+  confirmDiscard: (reason?: string) => Promise<void>;
+  cancelDiscard: () => void;
+  discardDraftJob: (jobId: string) => Promise<void>;
   prefillNewJobForm: (values: NewJobFormValues) => void;
   clearNewJobPrefill: () => void;
   /** Dev: reset UI state after clearing IndexedDB job data. */
   resetAfterHistoryClear: () => void;
   clearBackupPrompt: () => void;
-  loadJob: (id: string) => Promise<void>;
+  loadJob: (id: string, options?: { fromHistory?: boolean }) => Promise<void>;
   refreshPhotoTags: () => Promise<void>;
   createJob: (input: {
     tier: TierId;
@@ -194,38 +213,175 @@ function markQcStep(
   });
 }
 
+async function deleteJobAndPhotos(jobId: string): Promise<void> {
+  await db.photos.where("job_id").equals(jobId).delete();
+  await db.jobs.delete(jobId);
+}
+
+async function declineJobWithReason(
+  job: JobRecord,
+  reason: string,
+): Promise<JobRecord> {
+  const at = new Date().toISOString();
+  const updated: JobRecord = {
+    ...job,
+    status: "declined",
+    phase: "closed",
+    audit_log: [
+      ...job.audit_log,
+      {
+        at,
+        action: "job_declined",
+        detail: reason.trim() || "discarded",
+      },
+    ],
+  };
+  await db.jobs.put(updated);
+  return updated;
+}
+
 export const useJobStore = create<JobStore>((set, get) => ({
-  screen: "home",
+  jobPhaseScreen: "intake",
   activeJobId: null,
   activeJob: null,
   intakePhotoTags: [],
   loading: false,
+  launchComplete: false,
+  reopenCandidate: null,
+  discardPrompt: null,
   backupPromptJobId: null,
   historyListKey: 0,
   newJobPrefill: null,
 
-  setScreen: (screen) => set({ screen }),
+  setJobPhaseScreen: (jobPhaseScreen) => set({ jobPhaseScreen }),
 
-  prefillNewJobForm: (values) =>
+  bootstrapLaunch: async () => {
+    const jobs = await db.jobs.toArray();
+    const resumable = findResumableJob(jobs);
+    if (resumable) {
+      await get().loadJob(resumable.id);
+      useUiStore.getState().setAppTab("active");
+      useUiStore.getState().closeNewJob();
+    } else {
+      const reopen = findReopenCandidate(jobs);
+      set({
+        reopenCandidate: reopen,
+        activeJobId: null,
+        activeJob: null,
+      });
+    }
+    set({ launchComplete: true });
+  },
+
+  requestNewJob: async () => {
+    const active = get().activeJob;
+    if (active && isInFlightJob(active)) {
+      set({
+        discardPrompt: { job: active, intent: "new_job" },
+      });
+      return;
+    }
+    const jobs = await db.jobs.toArray();
+    const other = findResumableJob(
+      jobs.filter((j) => j.id !== active?.id),
+    );
+    if (other) {
+      set({
+        discardPrompt: { job: other, intent: "new_job" },
+      });
+      return;
+    }
+    useUiStore.getState().openNewJob();
+  },
+
+  requestSwitchJob: async (targetJobId) => {
+    const active = get().activeJob;
+    if (active?.id === targetJobId) {
+      await get().loadJob(targetJobId, { fromHistory: true });
+      return;
+    }
+    if (active && isInFlightJob(active)) {
+      set({
+        discardPrompt: {
+          job: active,
+          intent: "switch",
+          targetJobId,
+        },
+      });
+      return;
+    }
+    await get().loadJob(targetJobId, { fromHistory: true });
+  },
+
+  confirmDiscard: async (reason) => {
+    const prompt = get().discardPrompt;
+    if (!prompt) return;
+
+    const { job, intent, targetJobId } = prompt;
+    set({ discardPrompt: null, loading: true });
+
+    if (isDraftOnly(job)) {
+      await deleteJobAndPhotos(job.id);
+    } else {
+      if (!reason?.trim()) {
+        set({ discardPrompt: prompt, loading: false });
+        return;
+      }
+      await declineJobWithReason(job, reason);
+    }
+
+    const wasActive = get().activeJobId === job.id;
+    if (wasActive) {
+      set({ activeJobId: null, activeJob: null, intakePhotoTags: [] });
+    }
+
+    set({ loading: false });
+
+    if (intent === "new_job") {
+      useUiStore.getState().openNewJob();
+    } else if (targetJobId) {
+      await get().loadJob(targetJobId, { fromHistory: true });
+    }
+  },
+
+  cancelDiscard: () => set({ discardPrompt: null }),
+
+  discardDraftJob: async (jobId) => {
+    const job = await db.jobs.get(jobId);
+    if (!job || !isDraftOnly(job)) return;
+    await deleteJobAndPhotos(jobId);
+    if (get().activeJobId === jobId) {
+      set({ activeJobId: null, activeJob: null, intakePhotoTags: [] });
+    }
+    const jobs = await db.jobs.toArray();
+    const reopen = findReopenCandidate(jobs);
+    set({ reopenCandidate: reopen });
+  },
+
+  prefillNewJobForm: (values) => {
+    useUiStore.getState().openNewJob();
     set({
       newJobPrefill: values,
-      screen: "new_job",
       activeJobId: null,
       activeJob: null,
-    }),
+    });
+  },
 
   clearNewJobPrefill: () => set({ newJobPrefill: null }),
 
-  resetAfterHistoryClear: () =>
+  resetAfterHistoryClear: () => {
+    useUiStore.getState().setAppTab("history");
+    useUiStore.getState().closeNewJob();
     set((state) => ({
       activeJobId: null,
       activeJob: null,
       intakePhotoTags: [],
       backupPromptJobId: null,
       newJobPrefill: null,
+      reopenCandidate: null,
       historyListKey: state.historyListKey + 1,
-      screen: "history",
-    })),
+    }));
+  },
 
   clearBackupPrompt: () => set({ backupPromptJobId: null }),
 
@@ -236,47 +392,39 @@ export const useJobStore = create<JobStore>((set, get) => ({
     set({ intakePhotoTags: tags });
   },
 
-  loadJob: async (id) => {
+  loadJob: async (id, options) => {
     set({ loading: true });
     const job = await db.jobs.get(id);
     const tags = job ? await listJobPhotoTags(id) : [];
-    let screen = get().screen;
-    if (job) {
-      if (job.status === "blocked_refer_out" || job.status === "declined") {
-        screen = "refer_out";
-      } else if (
-        job.status === "draft" ||
-        (job.phase === "intake" && !job.intake?.completed_at)
-      ) {
-        screen = "intake";
-      } else if (job.status === "active" || job.status === "awaiting_approval") {
-        const phase = job.phase;
-        screen = job.reopened_at
-          ? "checklist"
-          : phase === "qc_delivery"
-            ? "delivery"
-            : phase === "qc_work"
-              ? "qc"
-              : "checklist";
-      } else if (
-        job.status === "completed" ||
-        job.phase === "closed" ||
-        job.phase === "qc_delivery" ||
-        (job.qc &&
-          (job.qc.fresh_eyes_complete_at || job.qc.fresh_eyes_skipped_at) &&
-          !job.qc.delivery_passed_at)
-      ) {
-        screen = "delivery";
-      } else if (job.phase === "qc_work") {
-        screen = "qc";
-      }
+
+    if (!job) {
+      set({ loading: false });
+      return;
     }
+
+    if (isTerminalJob(job) && job.status === "completed" && !canReopenJob(job)) {
+      set({ loading: false });
+      return;
+    }
+
+    const jobPhaseScreen = resolveJobPhaseScreen(job);
+    const fromHistory = options?.fromHistory ?? false;
+
+    if (isInFlightJob(job)) {
+      useUiStore.getState().setAppTab("active");
+      useUiStore.getState().closeNewJob();
+    } else if (fromHistory && job.status === "completed") {
+      useUiStore.getState().setAppTab("history");
+    }
+
     set({
       activeJobId: id,
-      activeJob: job ?? null,
+      activeJob: job,
       intakePhotoTags: tags,
       loading: false,
-      screen,
+      jobPhaseScreen,
+      reopenCandidate:
+        job.status === "completed" && canReopenJob(job) ? null : get().reopenCandidate,
     });
   },
 
@@ -321,11 +469,14 @@ export const useJobStore = create<JobStore>((set, get) => ({
       audit_log: [{ at: new Date().toISOString(), action: "job_created" }],
     };
     await db.jobs.put(job);
+    useUiStore.getState().setAppTab("active");
+    useUiStore.getState().closeNewJob();
     set({
       activeJobId: id,
       activeJob: job,
       intakePhotoTags: [],
-      screen: "intake",
+      jobPhaseScreen: "intake",
+      reopenCandidate: null,
     });
     return id;
   },
@@ -425,7 +576,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       };
       await db.jobs.put(updated);
       await get().regenerateChecklist({ flags });
-      set({ activeJob: updated, screen: "refer_out" });
+      set({ activeJob: updated, jobPhaseScreen: "refer_out" });
       return { ok: false, blocked: true, reason: gate.blockReason ?? "blocked" };
     }
 
@@ -460,7 +611,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
     const fresh = await db.jobs.get(job.id);
     const synced = withApprovalStatus(fresh ?? updated);
     await db.jobs.put(synced);
-    set({ activeJob: synced, screen: "checklist" });
+    set({ activeJob: synced, jobPhaseScreen: "checklist" });
     return { ok: true };
   },
 
@@ -488,7 +639,14 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated, screen: "history" });
+    set({
+      activeJob: null,
+      activeJobId: null,
+      intakePhotoTags: [],
+    });
+    useUiStore.getState().setAppTab("history");
+    const jobs = await db.jobs.toArray();
+    set({ reopenCandidate: findReopenCandidate(jobs) });
   },
 
   startWork: async () => {
@@ -748,7 +906,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated, screen: "qc" });
+    set({ activeJob: updated, jobPhaseScreen: "qc" });
     return { ok: true };
   },
 
@@ -799,7 +957,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
         ],
       };
       await db.jobs.put(updated);
-      set({ activeJob: updated, screen: "checklist" });
+      set({ activeJob: updated, jobPhaseScreen: "checklist" });
       return { ok: true };
     }
 
@@ -910,7 +1068,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated, screen: "delivery" });
+    set({ activeJob: updated, jobPhaseScreen: "delivery" });
     return { ok: true };
   },
 
@@ -941,7 +1099,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ],
     };
     await db.jobs.put(updated);
-    set({ activeJob: updated, screen: "delivery" });
+    set({ activeJob: updated, jobPhaseScreen: "delivery" });
     return { ok: true };
   },
 
@@ -1007,7 +1165,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
     await db.jobs.put(updated);
     set({
       activeJob: updated,
-      screen: "delivery",
+      jobPhaseScreen: "delivery",
       backupPromptJobId: shouldShowBackupPrompt(job.id) ? job.id : null,
     });
     return { ok: true };
@@ -1028,7 +1186,7 @@ export const useJobStore = create<JobStore>((set, get) => ({
 
     const updated = applyJobReopen(job, reason);
     await db.jobs.put(updated);
-    set({ activeJob: updated, screen: "checklist" });
+    set({ activeJob: updated, jobPhaseScreen: "checklist" });
     return { ok: true };
   },
 }));

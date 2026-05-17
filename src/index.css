@@ -10,3 +10,23 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Field mode palette — full theme wiring in PR2 */
+[data-field-mode="true"] {
+  background-color: #f8f9fa;
+  color: #111827;
+}
+
+[data-field-mode="true"] .bg-slate-950,
+[data-field-mode="true"] .bg-slate-950\/95 {
+  background-color: #f8f9fa !important;
+}
+
+[data-field-mode="true"] .text-slate-100,
+[data-field-mode="true"] .text-white {
+  color: #111827 !important;
+}
+
+[data-field-mode="true"] .bg-sky-600 {
+  background-color: #059669 !important;
+}

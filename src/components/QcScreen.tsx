@@ -35,7 +35,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
     startFreshEyes,
     skipFreshEyes,
     completeFreshEyes,
-    setScreen,
+    setJobPhaseScreen,
   } = useJobStore();
 
   const [selectedFails, setSelectedFails] = useState<string[]>([]);
@@ -333,7 +333,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
                   onClick={() =>
                     void run(async () => {
                       const result = await completeFreshEyes();
-                      if (result.ok) setScreen("delivery");
+                      if (result.ok) setJobPhaseScreen("delivery");
                       return result;
                     })
                   }
@@ -373,7 +373,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
               onClick={() =>
                 void run(async () => {
                   const result = await skipFreshEyes(skipReason);
-                  if (result.ok) setScreen("delivery");
+                  if (result.ok) setJobPhaseScreen("delivery");
                   return result;
                 })
               }
@@ -394,7 +394,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
           </p>
           <button
             type="button"
-            onClick={() => setScreen("delivery")}
+            onClick={() => setJobPhaseScreen("delivery")}
             className="w-full rounded-lg bg-sky-600 py-2 text-sm font-medium text-white"
           >
             Go to delivery
@@ -407,7 +407,7 @@ export function QcScreen({ job, onGoChecklist }: QcScreenProps) {
           <p className="font-medium text-emerald-200">Job complete</p>
           <button
             type="button"
-            onClick={() => setScreen("delivery")}
+            onClick={() => setJobPhaseScreen("delivery")}
             className="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white"
           >
             View delivery summary

@@ -4,8 +4,11 @@
 
 | Path | Role |
 |------|------|
-| `src/App.tsx` | Screen router |
+| `src/App.tsx` | App shell, 3-tab router, history |
 | `src/store/jobStore.ts` | Job lifecycle, intake, complete/undo step |
+| `src/store/uiStore.ts` | Tab, field mode, new-job form visibility |
+| `src/lib/navigation/` | Phase router, launch resume |
+| `src/components/shell/` | Header, bottom nav, macro stepper, discard modal |
 | `src/main.tsx` | React mount |
 
 ## Domain logic (pure / testable)
