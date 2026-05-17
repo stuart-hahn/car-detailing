@@ -21,7 +21,8 @@ import { ActiveJobHub, ActiveJobView } from "./components/shell/ActiveJobView";
 import { AppHeader } from "./components/shell/AppHeader";
 import { BottomNav } from "./components/shell/BottomNav";
 import { DiscardJobModal } from "./components/shell/DiscardJobModal";
-import { db, getOrCreateSettings, type JobRecord } from "./lib/db";
+import { db, type JobRecord } from "./lib/db";
+import { useAppTheme } from "./hooks/useAppTheme";
 import { isDraftOnly } from "./lib/navigation/jobPhase";
 import { useJobStore } from "./store/jobStore";
 import { useUiStore } from "./store/uiStore";
@@ -45,12 +46,8 @@ export default function App() {
     historyListKey,
     requestSwitchJob,
   } = useJobStore();
-  const { appTab, showNewJob, fieldMode } = useUiStore();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    getOrCreateSettings().then(() => setReady(true));
-  }, []);
+  const { appTab, showNewJob } = useUiStore();
+  const { ready } = useAppTheme();
 
   useEffect(() => {
     if (!ready) return;
@@ -66,10 +63,7 @@ export default function App() {
   }
 
   return (
-    <div
-      className="min-h-dvh bg-slate-950 text-slate-100"
-      data-field-mode={fieldMode ? "true" : undefined}
-    >
+    <div className="min-h-dvh">
       <AppHeader activeJob={activeJob} />
 
       <main

@@ -22,7 +22,7 @@
 
 | Done | Next |
 |------|------|
-| Customer approval UI — dual on-site attest, evidence photo rules, grant/decline unlock via `appendApprovedSteps`, Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes, 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI, PR1 — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav | PR2 |
+| Delivery screen — handoff steps, care sheet, delivery QC; QC routes to delivery after fresh-eyes, 24h job reopen — reason required, delivery reset, immutable after window; history + delivery UI, PR1 — Job shell, 3-tab nav, phase router, launch A+D, one-job gate, kill 7-tab nav, PR2 — CSS vars, field palette, theme wired, Settings + Export/Import | PR3 |
 
 Details: [docs/context/BACKLOG.md](docs/context/BACKLOG.md)
 
@@ -49,7 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
-- `9fba2b0` feat: job shell — 3-tab nav, phase router, one-job gate (PR1)
+- `8727d2e` feat: job shell — 3-tab nav, phase router, one-job gate (PR1)
 - `bc3f990` feat: QC screen updates
 - `30e4062` chore: sync AGENTS.md commit log
 - `2bc4c5c` docs: UI/UX shell backlog (PR1–PR6)

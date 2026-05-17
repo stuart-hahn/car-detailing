@@ -23,6 +23,39 @@ export interface AppSettings {
     engine: string[];
   };
   theme: "system" | "light" | "dark";
+  /** When true, field (light) mode is on at app launch. */
+  field_default_on_launch: boolean;
+}
+
+const SETTINGS_DEFAULTS: AppSettings = {
+  id: "default",
+  business_name: "Your Detailing Business",
+  owner_name: "Technician",
+  phone: "",
+  helpers: [],
+  products: {
+    exterior: ["Synthetic sealant", "Iron remover", "Clay lubricant"],
+    interior: ["Interior cleaner", "Fabric extractor", "Leather conditioner"],
+    wheels: ["Wheel cleaner", "Wheel sealant"],
+    engine: ["Engine degreaser"],
+  },
+  theme: "system",
+  field_default_on_launch: false,
+};
+
+export function normalizeSettings(
+  raw: Partial<AppSettings> & { id: "default" },
+): AppSettings {
+  return {
+    ...SETTINGS_DEFAULTS,
+    ...raw,
+    products: {
+      ...SETTINGS_DEFAULTS.products,
+      ...raw.products,
+    },
+    field_default_on_launch:
+      raw.field_default_on_launch ?? SETTINGS_DEFAULTS.field_default_on_launch,
+  };
 }
 
 export interface CustomerRecord {
@@ -148,23 +181,18 @@ db.version(2).stores({
 
 export async function getOrCreateSettings(): Promise<AppSettings> {
   const existing = await db.settings.get("default");
-  if (existing) return existing;
-  const defaults: AppSettings = {
-    id: "default",
-    business_name: "Your Detailing Business",
-    owner_name: "Technician",
-    phone: "",
-    helpers: [],
-    products: {
-      exterior: ["Synthetic sealant", "Iron remover", "Clay lubricant"],
-      interior: ["Interior cleaner", "Fabric extractor", "Leather conditioner"],
-      wheels: ["Wheel cleaner", "Wheel sealant"],
-      engine: ["Engine degreaser"],
-    },
-    theme: "system",
-  };
-  await db.settings.put(defaults);
-  return defaults;
+  if (existing) return normalizeSettings(existing);
+  await db.settings.put(SETTINGS_DEFAULTS);
+  return SETTINGS_DEFAULTS;
+}
+
+export async function saveSettings(
+  patch: Partial<Omit<AppSettings, "id">>,
+): Promise<AppSettings> {
+  const current = await getOrCreateSettings();
+  const next = normalizeSettings({ ...current, ...patch, id: "default" });
+  await db.settings.put(next);
+  return next;
 }
 
 export { db };

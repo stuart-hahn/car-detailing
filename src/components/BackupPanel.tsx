@@ -9,12 +9,14 @@ interface BackupPanelProps {
   jobId?: string;
   compact?: boolean;
   onExported?: () => void;
+  onImported?: () => void;
 }
 
 export function BackupPanel({
   jobId,
   compact,
   onExported,
+  onImported,
 }: BackupPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -119,6 +121,7 @@ export function BackupPanel({
             setMessage(
               `Imported ${result.jobs} job(s), ${result.photos} photo(s), ${result.customers} customer(s).`,
             );
+            onImported?.();
           });
         }}
       />

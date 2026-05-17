@@ -7,6 +7,9 @@
 | `src/App.tsx` | App shell, 3-tab router, history |
 | `src/store/jobStore.ts` | Job lifecycle, intake, complete/undo step |
 | `src/store/uiStore.ts` | Tab, field mode, new-job form visibility |
+| `src/store/settingsStore.ts` | Dexie settings load/patch |
+| `src/hooks/useAppTheme.ts` | Theme + field mode on `documentElement` |
+| `src/lib/theme/` | Palette tokens, resolve/apply theme |
 | `src/lib/navigation/` | Phase router, launch resume |
 | `src/components/shell/` | Header, bottom nav, macro stepper, discard modal |
 | `src/main.tsx` | React mount |
