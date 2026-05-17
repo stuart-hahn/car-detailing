@@ -49,6 +49,7 @@ Finish: npm run agent:finish -- -m "<message>"
 
 ## Commits (recent)
 
+- `98db644` chore: update AGENTS.md
 - `445a7a9` chore: update AGENTS.md
 - `5ea0f85` chore: update AGENTS.md
 - `6df3e26` chore: update AGENTS.md
@@ -56,4 +57,3 @@ Finish: npm run agent:finish -- -m "<message>"
 - `147eef7` docs: update progressive discovery
 - `c7a6f28` chore: update AGENTS.md
 - `2dd2d09` feat: 24h job reopen window with reason and immutability
-- `9c29994` feat: UI updates
